@@ -51,16 +51,52 @@ export interface TFill {
   timestamp: number;
 }
 
-export type MessageToApi =
+export type MessageToApi = {
+  type: "ORDER_PLACED";
+  payload: {
+    orderId: string;
+    filledQty: number;
+    fills: Pick<TFill, "price" | "quantity" | "lastTradeId">[];
+  };
+};
+
+export type MessageFromApi =
   | {
-      type: "ORDER_PLACED";
+      type: "CREATE_ORDER";
       payload: {
-        orderId: string;
-        filledQty: number;
-        fills: Pick<TFill, "price" | "quantity" | "lastTradeId">[];
+        price: price;
+        quantity: qty;
+        side: TSide;
+        userId: TUserId;
+        market: TMarket_Str;
       };
     }
   | {
-      type: "CREATE_ORDER";
-      payload: IncomingOrder;
+      type: "ORDER_CANCELLED";
+      payload: {
+        order: TOrder["orderId"];
+        userId: TUserId;
+        market: TMarket_Str;
+      };
+    }
+  | {
+      type: "ON_RAMP";
+      payload: {
+        userId: string;
+        amount: number;
+        txnId: string;
+      };
+    }
+  | {
+      type: "GET_DETH";
+      payload: {
+        market: TMarket_Str;
+      };
+    }
+  | {
+      type: "OPEN_ORDERS";
+      payload: {
+        userId: string;
+        market: TMarket_Str;
+      };
     };

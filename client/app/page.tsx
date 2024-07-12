@@ -1,12 +1,19 @@
-import React from 'react';
-import LimitOrder from './Components/OrderForm/LimitOrder';
+import { Box } from "@radix-ui/themes";
+import Navbar from "./Components/Navbar";
+import LimitOrder from "./Components/OrderForm/LimitOrder";
+import Temp from "./Temp";
 
 const HomePage = () => {
-  console.log('first');
-
   return (
     <div>
-      <LimitOrder />
+      <Navbar />
+
+      <div className="flex ">
+        <Box className="flex-[0.75]">Chart</Box>
+        <Box className="flex-[0.25]">
+          <LimitOrder />
+        </Box>
+      </div>
     </div>
   );
 };

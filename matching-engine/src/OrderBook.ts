@@ -150,7 +150,7 @@ export class OrderBook extends TOrderBook {
         price: bestAsk.price,
 
         tradeId: this.lastTradeId++,
-        timestamps: Date.now(),
+        timestamp: Date.now(),
       });
 
       if (this.asks[0].filled == this.asks[0].quantity) this.asks.shift();
@@ -198,7 +198,7 @@ export class OrderBook extends TOrderBook {
 
         tradeId: this.lastTradeId++,
 
-        timestamps: Date.now(),
+        timestamp: Date.now(),
       });
 
       if (this.bids[0].quantity == this.bids[0].filled) this.bids.shift();

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-
+import "@radix-ui/themes/styles.css";
+import SessionWrapper from "./SessionWrapper";
+import { Theme } from "@radix-ui/themes";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -16,7 +18,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body
+        className={`${inter.className} lg:container mx-auto min-h-screen max-w-screen`}
+      >
+        <SessionWrapper>
+          <Theme appearance="dark">{children}</Theme>
+        </SessionWrapper>
+      </body>
     </html>
   );
 }

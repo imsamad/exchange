@@ -37,7 +37,7 @@ export interface TFill {
   price: TPrice;
 
   tradeId: number;
-  timestamps: number;
+  timestamp: number;
 }
 
 export interface Balance {
@@ -49,7 +49,10 @@ export type TUserBalance = Record<TQuote_Aasset | TBase_Asset, Balance>;
 
 export type DBMessage = {
   type: "TRADE_ADDED";
-  payload: TFill;
+  payload: {
+    fill: TFill;
+    market: TMarket_Str;
+  };
 };
 
 export type MessageToApi =

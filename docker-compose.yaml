@@ -8,6 +8,7 @@ services:
     volumes:
       - ./client/:/app/
       - /app/node_modules
+    env_file: .env
     networks:
       - exchange_nw
 
@@ -17,6 +18,7 @@ services:
       target: dev
     ports:
       - 4000:4000
+    env_file: .env
     volumes:
       - ./api/:/app/
       - /app/node_modules
@@ -24,8 +26,6 @@ services:
       - order_queue
     networks:
       - exchange_nw
-    environment:
-      - REDIS_URL=redis://order_queue:6379
 
   matching-engine:
     build:
@@ -38,16 +38,40 @@ services:
       - order_queue
     networks:
       - exchange_nw
-    environment:
-      - REDIS_URL=redis://order_queue:6379
+    env_file: .env
 
   order_queue:
     image: redis
-    ports:
-      - "6379:6379"
     networks:
       - exchange_nw
+
+  timescaledb:
+    image: timescale/timescaledb-ha:pg16
+    env_file: .env
+    ports:
+      - 5432:5432
+    # volumes:
+    #   - timescale-data:/var/lib/postgresql/data
+    networks:
+      - exchange_nw
+
+  store:
+    build:
+      context: store
+      target: dev
+    networks:
+      - exchange_nw
+    volumes:
+      - ./store/:/app/
+      - /app/node_modules
+    depends_on:
+      - order_queue
+      - timescaledb
+    env_file: .env
 
 networks:
   exchange_nw:
     driver: bridge
+
+volumes:
+  timescale-data:

@@ -25,7 +25,7 @@ abstract class TEngine {
 
   abstract updateBalance(order: TOrder, fills: TFill[]): void;
 
-  abstract createDbTrade(fills: TFill[]): void;
+  abstract createDbTrade(fills: TFill[], market: TMarket_Str): void;
 
   abstract publisWsDepthUpdates(fills: TFill[], order: TOrder): void;
 
@@ -71,10 +71,13 @@ export class Engine implements TEngine {
 
     if (snapshot) this.restoreSnapshot(snapshot);
     else this.init();
-    setInterval(this.saveSnapshot, 3000);
+    setInterval(() => {
+      this.saveSnapshot(this.orderBooks, this.userBalances);
+    }, 3000);
   }
 
   init() {
+    // todo: generate from store
     this.orderBooks = {
       [OrderBook.getTicker("TATA", "INR")]: new OrderBook({
         baseAsset: "TATA",
@@ -95,6 +98,7 @@ export class Engine implements TEngine {
       },
     };
   }
+
   restoreSnapshot(snapshot: any) {
     snapshot = JSON.parse(snapshot.toString());
 
@@ -104,17 +108,22 @@ export class Engine implements TEngine {
 
     this.userBalances = snapshot.userBalaces;
   }
-  saveSnapshot() {
-    fs.writeFileSync(
-      "./snapshot.json",
-      JSON.stringify({
-        orderBooks: Object.keys(this.orderBooks).map((key) => ({
-          [key]: this.orderBooks[key].getSnapShot(),
-        })),
-        userBalances: this.userBalances,
-      })
-    );
+
+  saveSnapshot(
+    orderBooks: Record<TMarket_Str, TOrderBook>,
+    userBalances: Record<TUserId, TUserBalance>
+  ) {
+    const snap = {
+      orderBooks: Object.keys(orderBooks).map((key) => {
+        return {
+          [key]: orderBooks[key].getSnapShot(),
+        };
+      }),
+      userBalances: userBalances,
+    };
+    fs.writeFileSync("./snapshot.json", JSON.stringify(snap));
   }
+
   process({
     message,
     clientId,
@@ -124,6 +133,8 @@ export class Engine implements TEngine {
   }): void {
     if (message.type == "CREATE_ORDER") {
       try {
+        message.payload.price = Number(message.payload.price);
+        message.payload.quantity = Number(message.payload.quantity);
         const payload = this.createOrder(message.payload);
 
         RedisManager.getInstance().sendToApi(clientId, payload);
@@ -170,11 +181,14 @@ export class Engine implements TEngine {
         return;
       }
     } else if (message.type == "ON_RAMP") {
+      console.log("pre ramp: ", message);
       this.onRamp(
         message.payload.userId,
         message.payload.amount,
         message.payload.quoteAsset
       );
+
+      console.log("this.userBalances: ", this.userBalances);
     } else if (message.type == "ORDER_CANCELLED") {
       try {
         if (!this.orderBooks[message.payload.market])
@@ -246,7 +260,7 @@ export class Engine implements TEngine {
 
     this.updateBalance(order, fills);
 
-    this.createDbTrade(fills);
+    this.createDbTrade(fills, order.market);
 
     // this.updateDbOrders(order, executedQty, fills, market);
 
@@ -274,6 +288,13 @@ export class Engine implements TEngine {
 
     const baseAsset = order.market.split("_")[0];
     const quoteAsset = order.market.split("_")[1];
+
+    if (!userBalace[quoteAsset]) {
+      this.userBalances[order.userId][quoteAsset] = {
+        available: 0,
+        locked: 0,
+      };
+    }
 
     if (order.side == "buy") {
       const reqAmount = order.price * order.quantity;
@@ -323,11 +344,11 @@ export class Engine implements TEngine {
     });
   }
 
-  createDbTrade(fills: TFill[]): void {
+  createDbTrade(fills: TFill[], market: TMarket_Str): void {
     fills.forEach((fill) => {
       RedisManager.getInstance().pushMessage({
         type: "TRADE_ADDED",
-        payload: fill,
+        payload: { fill, market },
       });
     });
   }

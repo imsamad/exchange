@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev src/index",
     "build": "pnpm tsc",
-    "start": "node out/index"
+    "start": "node out/index",
+    "seed": "ts-node src/seed-db"
   },
   "keywords": [],
   "author": "",

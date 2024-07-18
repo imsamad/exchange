@@ -12,14 +12,12 @@ import { Engine } from "./Engine";
     await redisClient.connect();
     console.log("engine running");
     while (1) {
-      const msg = await redisClient.rPop("messages");
+      const pop = await redisClient.brPop("messages", 0);
+      if (!pop || !pop.element) continue;
 
-      if (msg) {
-        console.log("msg: ", msg);
-        engine.process(JSON.parse(msg));
-      }
+      engine.process(JSON.parse(pop.element));
     }
   } catch (err) {
-    console.log("err: ", err);
+    console.error("err: ", err);
   }
 })();

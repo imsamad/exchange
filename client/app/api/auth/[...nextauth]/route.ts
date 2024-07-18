@@ -29,7 +29,7 @@ const handler = NextAuth({
             (await bcrypt.compare(password, data.rows[0].password))
           ) {
             const jwtToken = jwt.sign(
-              { id: data.rows[0].id },
+              { id: data.rows[0].user_id },
               process.env.JWT_SECRET as string
             );
 

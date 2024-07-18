@@ -1,5 +1,8 @@
+import fs from "fs";
+
 import { OrderBook, TOrderBook } from "./OrderBook";
 import { RedisManager } from "./RedisManager";
+
 import {
   IncomingOrder,
   MessageFromApi,
@@ -13,7 +16,14 @@ import {
   TUserBalance,
   TUserId,
 } from "./types";
-import fs from "fs";
+
+class CustomError extends Error {
+  errMsg: any;
+  constructor(errMsg: any) {
+    super();
+    this.errMsg = errMsg;
+  }
+}
 
 abstract class TEngine {
   abstract orderBooks: Record<string, TOrderBook>;
@@ -24,6 +34,8 @@ abstract class TEngine {
   abstract checkAndLockBalance(order: TOrder): void;
 
   abstract updateBalance(order: TOrder, fills: TFill[]): void;
+
+  abstract sendUpdatedBalance(order: TOrder, fills: TFill[]): void;
 
   abstract createDbTrade(fills: TFill[], market: TMarket_Str): void;
 
@@ -51,11 +63,11 @@ export class Engine implements TEngine {
   addOrderBook(base_asset: TBase_Asset, quote_asset: TQuote_Aasset): void {
     const ticker = OrderBook.getTicker(base_asset, quote_asset);
 
-    if (this.orderBooks[ticker]) throw new Error("already exist");
+    if (this.orderBooks[ticker]) throw new CustomError("already exist");
 
     this.orderBooks[ticker] = new OrderBook({
-      baseAsset: "TATA",
-      quoteAsset: "INR",
+      baseAsset: base_asset,
+      quoteAsset: quote_asset,
     });
   }
 
@@ -63,35 +75,38 @@ export class Engine implements TEngine {
     let snapshot = null;
 
     try {
-      if (process.env.WITH_SNAPSHOT)
-        snapshot = fs.readFileSync("./snapshot.json");
+      snapshot = fs.readFileSync("./snapshot.json");
     } catch (e) {
       console.log("No snapshot found");
     }
 
-    if (snapshot) this.restoreSnapshot(snapshot);
-    else this.init();
+    if (snapshot) {
+      console.log("snapshot found");
+      this.restoreSnapshot(snapshot);
+    } else {
+      // this.init();
+    }
+
     setInterval(() => {
       this.saveSnapshot(this.orderBooks, this.userBalances);
-    }, 3000);
+    }, 4000);
   }
 
   init() {
-    // todo: generate from store
     this.orderBooks = {
-      [OrderBook.getTicker("TATA", "INR")]: new OrderBook({
-        baseAsset: "TATA",
-        quoteAsset: "INR",
+      [OrderBook.getTicker("tata", "inr")]: new OrderBook({
+        baseAsset: "tata",
+        quoteAsset: "inr",
       }),
     };
 
     this.userBalances = {
       "123": {
-        TATA: {
+        tata: {
           available: 10000,
           locked: 0,
         },
-        INR: {
+        inr: {
           available: 10000,
           locked: 0,
         },
@@ -102,11 +117,11 @@ export class Engine implements TEngine {
   restoreSnapshot(snapshot: any) {
     snapshot = JSON.parse(snapshot.toString());
 
-    this.orderBooks = snapshot.orderBooks.map((ob: any) => {
-      return new OrderBook(ob);
+    snapshot.orderBooks.map((o: any) => {
+      this.orderBooks[o[0]] = new OrderBook(o[1]);
     });
 
-    this.userBalances = snapshot.userBalaces;
+    this.userBalances = JSON.parse(JSON.stringify(snapshot.userBalances));
   }
 
   saveSnapshot(
@@ -115,13 +130,12 @@ export class Engine implements TEngine {
   ) {
     const snap = {
       orderBooks: Object.keys(orderBooks).map((key) => {
-        return {
-          [key]: orderBooks[key].getSnapShot(),
-        };
+        return [key, orderBooks[key].getSnapShot()];
       }),
       userBalances: userBalances,
     };
-    fs.writeFileSync("./snapshot.json", JSON.stringify(snap));
+
+    fs.writeFileSync("./snapshot.json", JSON.stringify(snap, null, 4));
   }
 
   process({
@@ -131,14 +145,20 @@ export class Engine implements TEngine {
     message: MessageFromApi;
     clientId: string;
   }): void {
+    console.log("processing: ", message);
     if (message.type == "CREATE_ORDER") {
       try {
         message.payload.price = Number(message.payload.price);
         message.payload.quantity = Number(message.payload.quantity);
+        message.payload.market = message.payload.market.toLowerCase();
+
         const payload = this.createOrder(message.payload);
 
         RedisManager.getInstance().sendToApi(clientId, payload);
       } catch (err) {
+        console.error("error at: ", message.type);
+        console.error(err);
+
         RedisManager.getInstance().sendToApi(clientId, {
           type: "ORDER_PLACED",
           payload: {
@@ -149,6 +169,8 @@ export class Engine implements TEngine {
         });
       }
     } else if (message.type == "GET_DEPTH") {
+      message.payload.market = message.payload.market.toLowerCase();
+
       if (!this.orderBooks[message.payload.market]) {
         RedisManager.getInstance().sendToApi(clientId, {
           type: "DEPTH",
@@ -171,6 +193,8 @@ export class Engine implements TEngine {
         },
       });
     } else if (message.type == "OPEN_ORDERS") {
+      message.payload.market = message.payload.market.toLowerCase();
+
       if (!this.orderBooks[message.payload.market]) {
         RedisManager.getInstance().sendToApi(clientId, {
           type: "OPEN_ORDERS",
@@ -181,18 +205,34 @@ export class Engine implements TEngine {
         return;
       }
     } else if (message.type == "ON_RAMP") {
-      console.log("pre ramp: ", message);
-      this.onRamp(
-        message.payload.userId,
-        message.payload.amount,
-        message.payload.quoteAsset
-      );
+      try {
+        this.onRamp(
+          message.payload.userId,
+          message.payload.amount,
+          message.payload.asset.toLowerCase()
+        );
 
-      console.log("this.userBalances: ", this.userBalances);
+        RedisManager.getInstance().sendToApi(clientId, {
+          type: "ON_RAMP",
+          payload: {
+            error: false,
+          },
+        });
+      } catch (err) {
+        console.error("error at: ", message.type);
+        console.error(err);
+
+        RedisManager.getInstance().sendToApi(clientId, {
+          type: "ON_RAMP",
+          payload: {
+            error: true,
+          },
+        });
+      }
     } else if (message.type == "ORDER_CANCELLED") {
       try {
         if (!this.orderBooks[message.payload.market])
-          throw new Error("does not exist");
+          throw new CustomError("orderbook does not exist");
 
         const order =
           this.orderBooks[message.payload.market].asks.find(
@@ -206,32 +246,82 @@ export class Engine implements TEngine {
               userId == message.payload.userId
           );
 
-        if (!order) return;
+        if (!order)
+          throw new CustomError("order not found, do not play shitty buddy!");
+
         const base_asset = order.market.split("_")[0];
         const quote_asset = order.market.split("_")[1];
 
-        if (order.side == "buy") {
+        if (order.side == "bid") {
           this.orderBooks[message.payload.market].cancelBid(order.orderId);
 
           this.userBalances[message.payload.userId][quote_asset].available +=
             order.price * (order.quantity - order.filled);
+
           this.userBalances[message.payload.userId][quote_asset].locked -=
             order.price * (order.quantity - order.filled);
+
+          RedisManager.getInstance().pushMessage({
+            type: "BALANCE_UPDATES",
+            payload: {
+              updatedBalances: [
+                {
+                  asset: quote_asset,
+                  userId: order.userId,
+                  balance:
+                    this.userBalances[message.payload.userId][quote_asset],
+                },
+              ],
+            },
+          });
         } else {
           this.orderBooks[message.payload.market].cancelAsk(order.orderId);
 
           this.userBalances[message.payload.userId][base_asset].available +=
             order.quantity - order.filled;
+
           this.userBalances[message.payload.userId][base_asset].locked -=
             order.quantity - order.filled;
+
+          RedisManager.getInstance().pushMessage({
+            type: "BALANCE_UPDATES",
+            payload: {
+              updatedBalances: [
+                {
+                  asset: base_asset,
+                  userId: order.userId,
+                  balance:
+                    this.userBalances[message.payload.userId][base_asset],
+                },
+              ],
+            },
+          });
         }
+
+        RedisManager.getInstance().sendToApi(clientId, {
+          type: "ORDER_CANCELLED",
+          payload: {
+            message: "success",
+          },
+        });
+
         this.sendUpdatedDepthAt(order.price, message.payload.market);
-      } catch (err) {}
+      } catch (err) {
+        console.error("error at: ", message.type);
+        console.error(err);
+
+        RedisManager.getInstance().sendToApi(clientId, {
+          type: "ORDER_CANCELLED",
+          payload: {
+            message: "error",
+          },
+        });
+      }
     } else if (message.type == "ADD_ORDERBOOK") {
       try {
         this.addOrderBook(
-          message.payload.baseAsset,
-          message.payload.quoteAsset
+          message.payload.baseAsset.toLowerCase(),
+          message.payload.quoteAsset.toLowerCase()
         );
 
         RedisManager.getInstance().sendToApi(clientId, {
@@ -240,13 +330,24 @@ export class Engine implements TEngine {
             message: "success",
           },
         });
-      } catch (error) {}
+      } catch (error) {
+        console.error("error at: ", message.type);
+        console.error(error);
+
+        RedisManager.getInstance().sendToApi(clientId, {
+          type: "ADDED_ORDERBOOK",
+          payload: {
+            message: "error",
+          },
+        });
+      }
     }
   }
 
   public createOrder(incomingOrder: IncomingOrder): MessageToApi {
     const orderBook = this.orderBooks[incomingOrder.market];
-    if (!orderBook) throw new Error("market does not exist!");
+
+    if (!orderBook) throw new CustomError("market does not exist!");
 
     const order: TOrder = {
       ...incomingOrder,
@@ -259,6 +360,8 @@ export class Engine implements TEngine {
     const { filledQty, fills } = orderBook.addOrder(order);
 
     this.updateBalance(order, fills);
+
+    this.sendUpdatedBalance(order, fills);
 
     this.createDbTrade(fills, order.market);
 
@@ -283,29 +386,30 @@ export class Engine implements TEngine {
   }
 
   public checkAndLockBalance(order: TOrder): void {
-    const userBalace = this.userBalances[order.userId];
-    if (!userBalace) throw new Error("add funds");
+    let userBalace = this.userBalances[order.userId];
+
+    if (!userBalace) throw new CustomError("add funds");
 
     const baseAsset = order.market.split("_")[0];
     const quoteAsset = order.market.split("_")[1];
 
-    if (!userBalace[quoteAsset]) {
-      this.userBalances[order.userId][quoteAsset] = {
-        available: 0,
-        locked: 0,
-      };
-    }
+    if (order.side == "bid") {
+      if (!userBalace[quoteAsset])
+        throw new CustomError("assets not in account");
 
-    if (order.side == "buy") {
       const reqAmount = order.price * order.quantity;
+
       if (userBalace[quoteAsset].available < reqAmount)
-        throw new Error("insufficient funds");
+        throw new CustomError("insufficient funds");
 
       userBalace[quoteAsset].available -= reqAmount;
       userBalace[quoteAsset].locked += reqAmount;
     } else {
+      if (!userBalace[baseAsset])
+        throw new CustomError("assets not in account");
+
       if (userBalace[baseAsset].available < order.quantity)
-        throw new Error("insufficient funds");
+        throw new CustomError("insufficient funds");
 
       userBalace[baseAsset].available -= order.quantity;
       userBalace[baseAsset].locked += order.quantity;
@@ -319,9 +423,31 @@ export class Engine implements TEngine {
       const baseAsset = order.market.split("_")[0];
       const quoteAsset = order.market.split("_")[1];
 
-      if (order.side == "buy") {
-        const buyerUserBalance = this.userBalances[fill.userId];
-        const sellerUserBalance = this.userBalances[fill.otherUserId];
+      if (order.side == "bid") {
+        let buyerUserBalance = this.userBalances[fill.userId];
+        let sellerUserBalance = this.userBalances[fill.otherUserId];
+
+        // it might happen, buyer does not have base asset entry in userBalances
+        // buyer would have quoteAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+
+        if (!buyerUserBalance[baseAsset]) {
+          this.userBalances[fill.userId][baseAsset] = {
+            available: 0,
+            locked: 0,
+          };
+          buyerUserBalance = this.userBalances[fill.userId];
+        }
+
+        // it might happen, seller does not have quote asset entry in userBalances
+        // seller would have baseAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+
+        if (!sellerUserBalance[quoteAsset]) {
+          this.userBalances[fill.otherUserId][quoteAsset] = {
+            available: 0,
+            locked: 0,
+          };
+          sellerUserBalance = this.userBalances[fill.otherUserId];
+        }
 
         buyerUserBalance[baseAsset].available += fill.quantity;
         buyerUserBalance[quoteAsset].locked -= fill.quantity * fill.price;
@@ -332,8 +458,30 @@ export class Engine implements TEngine {
         this.userBalances[fill.userId] = buyerUserBalance;
         this.userBalances[fill.otherUserId] = sellerUserBalance;
       } else {
-        const sellerUserBalance = this.userBalances[fill.userId];
-        const buyerUserBalance = this.userBalances[fill.otherUserId];
+        let sellerUserBalance = this.userBalances[fill.userId];
+        let buyerUserBalance = this.userBalances[fill.otherUserId];
+
+        // it might happen, buyer does not have base asset entry in userBalances
+        // buyer would have quoteAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+
+        if (!buyerUserBalance[baseAsset]) {
+          this.userBalances[fill.userId][baseAsset] = {
+            available: 0,
+            locked: 0,
+          };
+          buyerUserBalance = this.userBalances[fill.userId];
+        }
+
+        // it might happen, seller does not have quote asset entry in userBalances
+        // seller would have baseAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+
+        if (!sellerUserBalance[quoteAsset]) {
+          this.userBalances[fill.otherUserId][quoteAsset] = {
+            available: 0,
+            locked: 0,
+          };
+          sellerUserBalance = this.userBalances[fill.otherUserId];
+        }
 
         sellerUserBalance[quoteAsset].available += fill.quantity * fill.price;
         sellerUserBalance[baseAsset].locked -= fill.quantity;
@@ -344,19 +492,72 @@ export class Engine implements TEngine {
     });
   }
 
-  createDbTrade(fills: TFill[], market: TMarket_Str): void {
-    fills.forEach((fill) => {
+  sendUpdatedBalance(order: TOrder, fills: TFill[]) {
+    const base_asset = order.market.split("_")[0];
+    const quote_asset = order.market.split("_")[1];
+
+    const updatedBalances: any = [];
+    if (!fills.length) {
+      if (order.side == "bid") {
+        updatedBalances.push({
+          userId: order.userId,
+          asset: quote_asset,
+          balance: this.userBalances[order.userId][quote_asset],
+        });
+      } else {
+        updatedBalances.push({
+          userId: order.userId,
+          asset: base_asset,
+          balance: this.userBalances[order.userId][base_asset],
+        });
+      }
+
       RedisManager.getInstance().pushMessage({
-        type: "TRADE_ADDED",
-        payload: { fill, market },
+        type: "BALANCE_UPDATES",
+        payload: {
+          updatedBalances,
+        },
       });
+
+      return;
+    }
+
+    const users = [
+      order.userId,
+      ...new Set(fills.map(({ otherUserId }) => otherUserId)),
+    ];
+
+    const updatedBalance = users.map((userId) => [
+      {
+        userId: userId,
+        asset: base_asset,
+        balance: this.userBalances[userId][base_asset],
+      },
+      {
+        userId: userId,
+        asset: quote_asset,
+        balance: this.userBalances[userId][quote_asset],
+      },
+    ]);
+
+    RedisManager.getInstance().pushMessage({
+      type: "BALANCE_UPDATES",
+      payload: { updatedBalances: updatedBalance.flat() },
+    });
+  }
+
+  createDbTrade(fills: TFill[], market: TMarket_Str): void {
+    RedisManager.getInstance().pushMessage({
+      type: "TRADE_ADDED",
+      payload: { fills, market },
     });
   }
 
   publisWsDepthUpdates(fills: TFill[], order: TOrder) {
     const depth = this.orderBooks[order.market].getDepth();
     const fillsPrice = fills.map((f) => f.price);
-    if (order.side == "buy") {
+
+    if (order.side == "bid") {
       // get the depth at all price at which trade happend
       // const updatedAsks = fillsPrice
       //   .map((fPrice) => depth.asks.find(([price]) => price == fPrice))
@@ -410,16 +611,19 @@ export class Engine implements TEngine {
     });
   }
 
-  onRamp(userId: TUserId, amount: TPrice, quoteAsset: TQuote_Aasset): void {
+  onRamp(userId: TUserId, amount: TPrice, asset: TQuote_Aasset): void {
     if (!this.userBalances[userId]) {
       this.userBalances[userId] = {
-        [quoteAsset]: {
+        [asset]: {
           available: amount,
           locked: 0,
         },
       };
     } else {
-      this.userBalances[userId][quoteAsset].available += amount;
+      if (!this.userBalances[userId]?.[asset])
+        this.userBalances[userId][asset] = { available: 0, locked: 0 };
+
+      this.userBalances[userId][asset].available += amount;
     }
   }
 

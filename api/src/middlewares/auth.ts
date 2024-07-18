@@ -31,13 +31,15 @@ export const authMiddleware = (
   try {
     const payload: any = jwt.verify(authSession, process.env.JWT_SECRET!);
 
+    if (!payload.id) throw new CustomeError(404, "not authorised!");
+
     req.currentUser = payload.id
       ? { id: payload.id, isAdmin: payload.role == "admin" }
       : undefined;
+    next();
   } catch (error) {
     throw new CustomeError(404, {
       message: "not authorised",
     });
   }
-  next();
 };

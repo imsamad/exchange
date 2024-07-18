@@ -1,22 +1,23 @@
-import { TOrderBook } from "./OrderBook";
-
 export type TPrice = number;
+export type TAmount = number;
 export type TQty = number;
 export type TUserId = string;
 export type TBase_Asset = string;
 export type TQuote_Aasset = TBase_Asset;
 export type TMarket_Str = string;
-export type TSide = "sell" | "buy";
+export type TSide = "ask" | "bid";
+export type TOrde_Id = string;
+export type TTrade_id = number;
+export type TTxn_id = string;
 
-export interface TOrder {
-  orderId: string;
-  userId: TUserId;
-  price: TPrice;
-  quantity: TQty;
-  side: TSide;
-  market: TMarket_Str;
-  filled: TQty;
-}
+export type TOrderBootType = {
+  baseAsset: string;
+  quoteAsset: string;
+  lastTradeId?: number;
+  currentPrice?: number;
+  asks?: TOrder[];
+  bids?: TOrder[];
+};
 
 export type IncomingOrder = {
   price: TPrice;
@@ -26,42 +27,69 @@ export type IncomingOrder = {
   market: TMarket_Str;
 };
 
-export interface TFill {
-  orderId: string;
-  otherOrderId: string;
+export interface TOrder extends IncomingOrder {
+  orderId: TOrde_Id;
+  filled: TQty;
+}
 
-  userId: string;
-  otherUserId: string;
+export interface TFill {
+  orderId: TOrde_Id;
+  otherOrderId: TOrde_Id;
+
+  userId: TUserId;
+  otherUserId: TUserId;
 
   quantity: TQty;
   price: TPrice;
 
-  tradeId: number;
+  tradeId: TTrade_id;
   timestamp: number;
+
+  side: TSide;
+
+  // TODO: is it not extra?
+  market: TMarket_Str;
 }
 
 export interface Balance {
-  available: number | TPrice;
-  locked: number | TPrice;
+  available: TPrice;
+  locked: TPrice;
 }
 
 export type TUserBalance = Record<TQuote_Aasset | TBase_Asset, Balance>;
 
-export type DBMessage = {
-  type: "TRADE_ADDED";
-  payload: {
-    fill: TFill;
-    market: TMarket_Str;
-  };
-};
+export type DBMessage =
+  | {
+      type: "BALANCE_UPDATES";
+      payload: {
+        updatedBalances: {
+          userId: TUserId;
+          asset: TBase_Asset | TQuote_Aasset;
+          balance: Balance;
+        }[];
+      };
+    }
+  | {
+      type: "TRADE_ADDED";
+      payload: {
+        fills: TFill[];
+        market: TMarket_Str;
+      };
+    };
 
 export type MessageToApi =
   | {
       type: "ORDER_PLACED";
       payload: {
-        orderId: string;
+        orderId: TOrde_Id;
         filledQty: TQty;
         fills: Pick<TFill, "price" | "quantity" | "tradeId">[];
+      };
+    }
+  | {
+      type: "ORDER_CANCELLED";
+      payload: {
+        message: "success" | "error";
       };
     }
   | {
@@ -69,7 +97,7 @@ export type MessageToApi =
       payload: {
         bids: TDepth;
         asks: TDepth;
-        currentPrice: TOrderBook["currentPrice"];
+        currentPrice: TOrderBootType["currentPrice"];
       };
     }
   | {
@@ -82,11 +110,18 @@ export type MessageToApi =
   | {
       type: "ADDED_ORDERBOOK";
       payload: {
-        message: "success";
+        message: "success" | "error";
+      };
+    }
+  | {
+      type: "ON_RAMP";
+      payload: {
+        error: boolean;
       };
     };
 
 export type TDepth = [TPrice, TQty][];
+
 export type MessageFromApi =
   | {
       type: "CREATE_ORDER";
@@ -103,10 +138,10 @@ export type MessageFromApi =
   | {
       type: "ON_RAMP";
       payload: {
-        userId: string;
-        amount: number;
-        txnId: string;
-        quoteAsset: TBase_Asset;
+        userId: TUserId;
+        amount: TAmount;
+        txnId: TTxn_id;
+        asset: TBase_Asset;
       };
     }
   | {

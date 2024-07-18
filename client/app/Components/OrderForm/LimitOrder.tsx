@@ -1,52 +1,75 @@
 "use client";
-import { Button, Flex, TextField } from "@radix-ui/themes";
-import Image from "next/image";
-import React, { ChangeEvent, useState } from "react";
+import { TIncomingOrder } from "@/app/lib/types";
+import { Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
+import { useSession } from "next-auth/react";
+import { redirect, useParams, usePathname } from "next/navigation";
+import React, { useState } from "react";
 
-const LimitOrder = () => {
-  const [formBody, setFormBody] = useState({
-    userId: "123",
-    market: "TATA_INR",
-    side: "ask",
-    quantity: 0,
-    price: 0,
+const LimitOrder = ({ currentPrice }: { currentPrice: number }) => {
+  const params = useParams<{ market: string }>();
+  const { data, status } = useSession();
+  const pathname = usePathname();
+
+  const [formBody, setFormBody] = useState<{
+    side: "bid" | "ask";
+    quantity: number;
+    price: number;
+    orderType: "limit" | "market";
+    orderInVolume: boolean;
+  }>({
+    side: "bid",
+    quantity: 10,
+    price: 10,
+    orderType: "limit",
+    orderInVolume: true,
   });
 
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const target = e.target;
-    setFormBody((pre) => ({ ...pre, [target.name]: target.value }));
-  };
-
   const onSubmit = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/limitorder`, {
-      method: "POST",
-      body: JSON.stringify(formBody),
-      headers: {
-        "Content-type": "application/json",
-      },
-    });
-    const data = await res.json();
+    const order: Omit<TIncomingOrder, "userId"> = {
+      side: formBody.side,
+      market: params.market,
+      price: formBody.price,
+      quantity: formBody.quantity,
+    };
+
+    // return;
+    // if (formBody.orderInVolume) order.quantity = formBody.quantity;
+    // else order.price = formBody.price;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/limitorder`, {
+        method: "POST",
+        body: JSON.stringify(order),
+        headers: {
+          "Content-type": "application/json",
+          // @ts-ignore
+          authorization: `Bearer ${data.jwtToken!}`,
+        },
+      });
+    } catch (err) {
+      console.log("er");
+    }
   };
-  const [side, setSide] = useState<"buy" | "ask">("buy");
-  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
-  const [priceOrQty, setPriceOrQty] = useState<"price" | "volume">("price");
 
   return (
     <div className="self-stretch">
       <Flex className="border-b-2 border-gray-800 text-lg">
         <button
-          onClick={() => setSide("buy")}
+          onClick={() => setFormBody((p) => ({ ...p, side: "bid" }))}
           className={`transition flex-1 py-4 text-green-500 border-b-2 border-b-transparent ${
-            side == "buy" ? "  border-b-green-900" : "hover:border-b-white"
+            formBody.side == "bid"
+              ? "  border-b-green-800"
+              : "hover:border-b-white"
           } `}
         >
           Buy
         </button>
         <button
           className={`transition flex-1 py-4 text-pink-300   border-b-2 border-b-transparent ${
-            side == "ask" ? "border-b-pink-600" : "hover:border-b-white"
+            formBody.side == "ask"
+              ? "border-b-pink-800"
+              : "hover:border-b-white"
           }`}
-          onClick={() => setSide("ask")}
+          onClick={() => setFormBody((p) => ({ ...p, side: "ask" }))}
         >
           Sell
         </button>
@@ -55,20 +78,20 @@ const LimitOrder = () => {
       <div className="p-2">
         <Flex className="gap-4 ">
           <button
-            onClick={() => setOrderType("limit")}
+            onClick={() => setFormBody((p) => ({ ...p, orderType: "limit" }))}
             className={`py-[1px] px-2 border-b-2 border-b-transparent  text-gray-400 transition ${
-              orderType == "limit"
-                ? "border-b-gray-300"
+              formBody.orderType == "limit"
+                ? "border-b-gray-400 text-white"
                 : "hover:border-b-gray-300"
             }`}
           >
             Limit
           </button>
           <button
-            onClick={() => setOrderType("market")}
+            onClick={() => setFormBody((p) => ({ ...p, orderType: "market" }))}
             className={`py-[1px] px-2 border-b-2 border-b-transparent  text-gray-400 transition ${
-              orderType == "market"
-                ? "border-b-gray-300"
+              formBody.orderType == "market"
+                ? "border-b-gray-400 text-white"
                 : "hover:border-b-gray-300"
             }`}
           >
@@ -80,21 +103,69 @@ const LimitOrder = () => {
           <p>Available Balance</p>
           <p className="text-gray-200">0.0 USDC</p>
         </Flex>
+        {formBody.orderType == "market" && (
+          <button
+            className="p-2 pt-3 pb-0 text-sm text-gray-500 flex justify-between items-center gap-1 select-none"
+            onClick={() =>
+              setFormBody((p) => ({ ...p, orderInVolume: !p.orderInVolume }))
+            }
+          >
+            <p>{!formBody.orderInVolume ? "Order Value" : "Volume"}</p>
 
-        <button
-          className="p-2 pt-3 pb-0 text-sm text-gray-500 flex justify-between items-center gap-1 select-none"
-          onClick={() =>
-            setPriceOrQty((p) => (p != "price" ? "price" : "volume"))
-          }
-        >
-          <p>{priceOrQty == "price" ? "Order Value" : "Volume"}</p>
+            <SwapSvgIcon />
+          </button>
+        )}
 
-          <SwapSvgIcon />
-        </button>
         <div className="px-2 mt-2 flex flex-col gap-2">
-          <TextField.Root size="3" type="number" className="text-right" />
-          <Button color="gray" variant="solid" highContrast radius="full">
-            Save
+          {formBody.orderType == "market" ? null : (
+            <>
+              <Text size="2" color="gray">
+                Price
+              </Text>
+              <TextField.Root
+                size="3"
+                type="number"
+                className="text-right"
+                value={formBody.price}
+                name="price"
+                onChange={(e) => {
+                  setFormBody((p) => ({ ...p, price: Number(e.target.value) }));
+                }}
+              />
+              <Text size="2" color="gray">
+                Quantity
+              </Text>
+              <TextField.Root
+                size="3"
+                type="number"
+                name="quantity"
+                className="text-right"
+                value={formBody.quantity}
+                onChange={(e) => {
+                  setFormBody((p) => ({
+                    ...p,
+                    quantity: Number(e.target.value),
+                  }));
+                }}
+              />
+            </>
+          )}
+          <Button
+            color="gray"
+            variant="solid"
+            highContrast
+            radius="full"
+            disabled={
+              status == "authenticated" &&
+              formBody.price == 0 &&
+              formBody.quantity == 0
+            }
+            onClick={() => {
+              if (status == "authenticated") onSubmit();
+              else redirect("/signin?redirectTo=" + pathname);
+            }}
+          >
+            {status == "authenticated" ? `Save` : "Signin"}
           </Button>
         </div>
       </div>

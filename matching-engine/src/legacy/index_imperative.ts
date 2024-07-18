@@ -35,7 +35,8 @@ client
     console.log("connected redis");
   })
   .catch((err) => {
-    console.log("err: ", err);
+    console.error("err while connecting to redis: ");
+    console.error(err);
   });
 
 const bids = [];
@@ -114,7 +115,6 @@ const user_balances: UserBalanceMap = {
 const main = async () => {
   while (1) {
     try {
-      console.log("first");
       const orderTmp = await client.brPop("LIMIT_ORDER", 0);
       let order: MessageFromApi = JSON.parse(
         // @ts-ignore

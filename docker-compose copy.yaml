@@ -23,7 +23,7 @@ services:
       - ./api/:/app/
       - /app/node_modules
     depends_on:
-      - mq
+      - order_queue
     networks:
       - exchange_nw
 
@@ -35,31 +35,23 @@ services:
       - ./matching-engine/:/app/
       - /app/node_modules
     depends_on:
-      - mq
+      - order_queue
     networks:
       - exchange_nw
     env_file: .env
 
-  mq:
+  order_queue:
     image: redis
     networks:
       - exchange_nw
-    ports:
-      - 6379:6379
 
-  db:
+  timescaledb:
     image: timescale/timescaledb-ha:pg16
-    environment:
-      - POSTGRES_DB=exchange
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=mypwd
-      - POSTGRES_HOST=timescaledb
-      - POSTGRES_PORT=5432
-
+    env_file: .env
     ports:
       - 5432:5432
-    volumes:
-      - timescale-data:/var/lib/postgresql/data
+    # volumes:
+    #   - timescale-data:/var/lib/postgresql/data
     networks:
       - exchange_nw
 
@@ -73,8 +65,8 @@ services:
       - ./store/:/app/
       - /app/node_modules
     depends_on:
-      - mq
-      - db
+      - order_queue
+      - timescaledb
     env_file: .env
 
 networks:

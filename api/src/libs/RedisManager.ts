@@ -1,15 +1,50 @@
-import { createClient, RedisClientOptions } from 'redis';
+import { createClient, RedisClientType } from "redis";
+import { MessageFromEngien, MessageToEngine } from "../types";
 
-class RedisManager {
-  private static client: any;
+export class RedisManager {
+  private subscriber: RedisClientType;
+  private publisher: RedisClientType;
+  private static instance: RedisManager;
 
   constructor() {
-    if (RedisManager.client) return;
+    // @ts-ignore
+    this.subscriber = createClient(process.env.REDIS_URL as string);
+    this.subscriber.connect();
 
-    RedisManager.client = createClient({
-      url: 'redis://order_queue:7379',
-    });
+    // @ts-ignore
+    this.publisher = createClient(process.env.REDIS_URL as string);
+    this.publisher.connect();
   }
 
-  static connect() {}
+  public static getInstance() {
+    if (!this.instance) {
+      this.instance = new RedisManager();
+    }
+    return this.instance;
+  }
+
+  public sendAndWait(message: MessageToEngine): Promise<MessageFromEngien> {
+    return new Promise((resolve) => {
+      const clientId =
+        Math.random().toString().slice(2, 10) +
+        Math.random().toString().slice(2, 10);
+
+      this.publisher.lPush(
+        "messages",
+        JSON.stringify({
+          clientId,
+          message,
+        })
+      );
+
+      this.subscriber.subscribe(clientId, (message: any) => {
+        try {
+          let _ = JSON.parse(message);
+          resolve(_);
+        } catch (error) {
+          resolve(message);
+        }
+      });
+    });
+  }
 }

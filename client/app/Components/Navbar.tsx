@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, DropdownMenu, Flex, Heading } from "@radix-ui/themes";
+import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import React from "react";

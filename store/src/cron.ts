@@ -1,6 +1,6 @@
 import { Client } from "pg";
 
-export async function refreshViews(pgClient: Client) {
+export async function startRefreshingViews(pgClient: Client) {
   try {
     const res = await pgClient.query(`
     SELECT matviewname 
@@ -25,11 +25,7 @@ export async function refreshViews(pgClient: Client) {
     const ten_seconds = 1000 * 10;
 
     let id = setInterval(() => {
-      refreshViews(pgClient);
+      startRefreshingViews(pgClient);
     }, ten_seconds);
-
-    process.on("exit", () => {
-      clearInterval(id);
-    });
   }
 }

@@ -6,9 +6,15 @@
   "scripts": {
     "dev:client": "cd client && pnpm dev && cd ../api && pnpm dev",
     "dev:api": "cd api && pnpm dev",
-    "dev": "concurrently  --names 'client,api' --prefix '{name}:{pid}' -c 'auto' 'pnpm dev:client' 'pnpm dev:api'",
+    "dev:engine": "cd matching-engine && pnpm dev",
+    "dev:store": "cd store && pnpm dev",
+    "dev": "concurrently  --names 'client,api,engine,store' --prefix '{name}:{pid}' -c 'auto' 'pnpm dev:client' 'pnpm dev:api' 'pnpm dev:engine' 'pnpm dev:store'",
     "build": "cd client && pnpm build && cd ../api && pnpm build",
-    "start": "pnpm start"
+    "start": "pnpm start",
+    "service:up": "docker compose up -d mq db && sleep 20",
+    "service:down": "docker compose down -v",
+    "migrate": "cd seeder && ts-node migrate",
+    "seed": "cd seeder && ts-node seed"
   },
   "keywords": [],
   "author": "",

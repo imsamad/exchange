@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { CustomeError } from '../libs/CustomError';
+import { Request, Response, NextFunction } from "express";
+import { CustomeError } from "../libs/CustomError";
 
 export const ErrorHandler = (
   err: any,
@@ -7,12 +7,13 @@ export const ErrorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
+  console.log(err);
   if (err instanceof CustomeError)
     return res.status(err.statusCode).json({
       message: err.msg,
     });
 
   return res.status(500).json({
-    message: 'Server is under maintenance!',
+    message: "Server is under maintenance!",
   });
 };

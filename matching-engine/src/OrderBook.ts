@@ -1,13 +1,11 @@
-import { TFill, TOrder, TPrice } from "./types";
+import { TOrderBootType, TFill, TOrder, TPrice } from "./types";
 
-type OrderBootType = {
-  baseAsset: string;
-  quoteAsset: string;
-  lastTradeId?: number;
-  currentPrice?: number;
-  asks?: TOrder[];
-  bids?: TOrder[];
-};
+function removeElementAtIndex(arr: any, index: number) {
+  if (index > -1 && index < arr.length) {
+    arr.splice(index, 1);
+  }
+  return arr;
+}
 
 export abstract class TOrderBook {
   public baseAsset: string;
@@ -18,7 +16,7 @@ export abstract class TOrderBook {
   public asks: TOrder[];
   public bids: TOrder[];
 
-  getSnapShot(): OrderBootType {
+  getSnapShot(): TOrderBootType {
     return {
       baseAsset: this.baseAsset,
       quoteAsset: this.quoteAsset,
@@ -32,7 +30,7 @@ export abstract class TOrderBook {
   public depth: any;
 
   static getTicker(baseAsset: string, quoteAsset: string) {
-    return `${baseAsset}_${quoteAsset}`;
+    return `${baseAsset.toLowerCase()}_${quoteAsset.toLowerCase()}`;
   }
   constructor({
     baseAsset,
@@ -41,7 +39,7 @@ export abstract class TOrderBook {
     currentPrice = 0,
     asks = [],
     bids = [],
-  }: OrderBootType) {
+  }: TOrderBootType) {
     this.baseAsset = baseAsset;
     this.quoteAsset = quoteAsset;
     this.ticker = OrderBook.getTicker(baseAsset, quoteAsset);
@@ -87,7 +85,7 @@ export class OrderBook extends TOrderBook {
     fills: TFill[];
     filledQty: number;
   } {
-    if (order.side == "buy") {
+    if (order.side == "bid") {
       const { fills, remainingOrder } = this.matchBid(order);
 
       if (remainingOrder.quantity != remainingOrder.filled) {
@@ -122,21 +120,35 @@ export class OrderBook extends TOrderBook {
 
     const fills: TFill[] = [];
 
-    const bestAsk = this.asks[0];
+    // if asks are not empty
+    // if there any order on asks side willing to sell at price lower or equal then the
+    // current user price
+    let i = 0;
 
-    while (
-      bestAsk &&
-      bestAsk.price <= order.price &&
-      order.quantity - order.filled > 0
-    ) {
+    /**
+     * bidPrice - 20
+     * asks : [40,50,60,70,80]
+     *
+     */
+
+    while (i < this.asks.length && order.quantity - order.filled > 0) {
+      const bestAsk = this.asks[i];
+
+      if (order.userId == bestAsk.userId || order.price < bestAsk.price) {
+        i++;
+        continue;
+      }
+
       const minFillableQty = Math.min(
         order.quantity - order.filled,
         bestAsk.quantity - bestAsk.filled
       );
 
+      this.currentPrice = bestAsk.price;
+
       order.filled += minFillableQty;
 
-      this.asks[0].filled += minFillableQty;
+      this.asks[i].filled += minFillableQty;
 
       fills.push({
         orderId: order.orderId,
@@ -151,9 +163,15 @@ export class OrderBook extends TOrderBook {
 
         tradeId: this.lastTradeId++,
         timestamp: Date.now(),
+
+        market: order.market,
+
+        side: "bid",
       });
 
-      if (this.asks[0].filled == this.asks[0].quantity) this.asks.shift();
+      if (this.asks[i].filled == this.asks[i].quantity) {
+        this.asks = removeElementAtIndex(this.asks, i);
+      } else i++;
     }
 
     return {
@@ -166,30 +184,44 @@ export class OrderBook extends TOrderBook {
     fills: TFill[];
     remainingOrder: TOrder;
   } {
-    const order = _order;
+    const saleOrder = _order;
 
     const fills: TFill[] = [];
 
-    const bestBid = this.bids[0];
+    let i = 0;
 
-    while (
-      bestBid &&
-      bestBid.price >= order.price &&
-      order.quantity - order.filled > 0
-    ) {
+    /**
+     * askPrice - 120
+     * bids : [100, 80, 60, 40]
+     *
+     */
+
+    while (i < this.bids.length && saleOrder.quantity != saleOrder.filled) {
+      const bestBid = this.bids[i];
+
+      if (
+        bestBid.userId == saleOrder.userId ||
+        saleOrder.price > bestBid.price
+      ) {
+        i++;
+        continue;
+      }
+
       const minFillableQty = Math.min(
-        order.quantity - order.filled,
+        saleOrder.quantity - saleOrder.filled,
         bestBid.quantity - bestBid.filled
       );
 
-      order.filled += minFillableQty;
-      this.bids[0].filled += minFillableQty;
+      saleOrder.filled += minFillableQty;
+      this.bids[i].filled += minFillableQty;
+
       this.currentPrice = bestBid.price;
+
       fills.push({
-        orderId: order.orderId,
+        orderId: saleOrder.orderId,
         otherOrderId: bestBid.orderId,
 
-        userId: order.userId,
+        userId: saleOrder.userId,
         otherUserId: bestBid.userId,
 
         quantity: minFillableQty,
@@ -199,19 +231,25 @@ export class OrderBook extends TOrderBook {
         tradeId: this.lastTradeId++,
 
         timestamp: Date.now(),
+
+        market: saleOrder.market,
+        side: "bid",
       });
 
-      if (this.bids[0].quantity == this.bids[0].filled) this.bids.shift();
+      if (this.bids[i].quantity == this.bids[i].filled) {
+        this.bids = removeElementAtIndex(this.bids, i);
+      } else i++;
     }
 
     return {
       fills,
-      remainingOrder: order,
+      remainingOrder: saleOrder,
     };
   }
 
   public cancelAsk(_orderId: string): TPrice {
     let cancelledAskPrice = 0;
+
     this.asks = this.asks.filter(({ orderId, price }) => {
       if (orderId != _orderId) return true;
       cancelledAskPrice = price;
@@ -223,6 +261,7 @@ export class OrderBook extends TOrderBook {
 
   public cancelBid(_orderId: string): TPrice {
     let cancelledBidPrice = 0;
+
     this.bids = this.bids.filter(({ orderId, price }) => {
       if (orderId != _orderId) return true;
       cancelledBidPrice = price;

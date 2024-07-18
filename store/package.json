@@ -7,12 +7,13 @@
     "dev": "ts-node-dev src/index",
     "build": "tsc -b",
     "start": "node dist/index",
-    "migrate": "ts-node src/seed-db.ts"
+    "migrate": "ts-node src/migrate.ts --migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "pg": "^8.12.0",
     "redis": "^4.6.15"
   },

@@ -1,5 +1,5 @@
-import { TOrderBook } from "./OrderBook";
-import { RedisManager } from "./RedisManager";
+import { TOrderBook } from "../OrderBook";
+import { RedisManager } from "../RedisManager";
 import {
   MessageFromApi,
   TFill,
@@ -7,7 +7,7 @@ import {
   TOrder,
   TUserBalance,
   TUserId,
-} from "./types";
+} from "../types";
 
 abstract class TEngineT {
   orderBooks: TOrderBook;

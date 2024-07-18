@@ -1,6 +1,7 @@
 import { pgPool } from "@/app/pg";
 import * as bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: Request) {
   try {
@@ -38,22 +39,17 @@ export async function POST(req: Request) {
 
     let res = await pgPool.query(query, values);
 
-    await pgPool.query(
-      `INSERT INTO "balances" (user_id, asset, available, locked) VALUES ($1, $2, $3, $4)  RETURNING *`,
-      [res.rows[0].user_id, "inr", 10000, 0]
+    const jwtToken = jwt.sign(
+      { id: res.rows[0].user_id },
+      process.env.JWT_SECRET as string
     );
 
-    const repo = await fetch(`${process.env.API_URL}/onramp`, {
+    await fetch(`${process.env.API_URL}/onramp`, {
       method: "post",
       headers: {
         "Content-type": "application/json",
+        Authorization: `Bearer ${jwtToken}`,
       },
-      body: JSON.stringify({
-        userId: res.rows[0].user_id,
-        amount: 10000,
-        txnId: "",
-        quoteAsset: "inr",
-      }),
     });
 
     return NextResponse.json(

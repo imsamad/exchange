@@ -1,1 +1,102 @@
-{"orderBooks":[{"TATA_INR":{"baseAsset":"TATA","quoteAsset":"INR","lastTradeId":0,"currentPrice":0,"asks":[],"bids":[]}}],"userBalances":{"123":{"TATA":{"available":10000,"locked":0},"INR":{"available":10000,"locked":0}}}}
+{
+    "orderBooks": [
+        [
+            "btc_inr",
+            {
+                "baseAsset": "btc",
+                "quoteAsset": "inr",
+                "lastTradeId": 11,
+                "currentPrice": 4,
+                "asks": [
+                    {
+                        "price": 4,
+                        "quantity": 10,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "ask",
+                        "orderId": "9339597903143246",
+                        "filled": 4
+                    },
+                    {
+                        "price": 10,
+                        "quantity": 10,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "ask",
+                        "orderId": "44645947828905963",
+                        "filled": 0
+                    }
+                ],
+                "bids": [
+                    {
+                        "price": 18,
+                        "quantity": 2,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "bid",
+                        "orderId": "5639439844368697",
+                        "filled": 0
+                    },
+                    {
+                        "price": 15,
+                        "quantity": 2,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "bid",
+                        "orderId": "18836711667788952",
+                        "filled": 0
+                    },
+                    {
+                        "price": 12,
+                        "quantity": 2,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "bid",
+                        "orderId": "6428441197172006",
+                        "filled": 0
+                    },
+                    {
+                        "price": 10,
+                        "quantity": 10,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "bid",
+                        "orderId": "521789599730748",
+                        "filled": 0
+                    },
+                    {
+                        "price": 4,
+                        "quantity": 10,
+                        "market": "btc_inr",
+                        "userId": 1,
+                        "side": "bid",
+                        "orderId": "8624287849949446",
+                        "filled": 0
+                    }
+                ]
+            }
+        ]
+    ],
+    "userBalances": {
+        "1": {
+            "btc": {
+                "available": 10044,
+                "locked": 16
+            },
+            "inr": {
+                "available": 9110,
+                "locked": 230
+            }
+        },
+        "2": {
+            "btc": {
+                "available": 9940,
+                "locked": 0
+            },
+            "inr": {
+                "available": 10660,
+                "locked": 0
+            }
+        }
+    }
+}

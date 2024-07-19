@@ -168,21 +168,21 @@ export type MessageFromApi =
 export type DepthUpdateMessage = {
   stream: string;
   data: {
-    b?: TDepth;
-    a?: TDepth;
-    e: "depth";
+    updatedAsks?: TDepth;
+    updatedBids?: TDepth;
+    type: "depth";
   };
 };
 
 export type TradeAddedMessage = {
   stream: string;
   data: {
-    e: "trade";
-    t: number;
+    type: "trade";
+    tradeId: number;
     m: boolean;
-    p: TPrice;
-    q: TQty;
-    s: string; // symbol
+    price: TPrice;
+    quantity: TQty;
+    symbol: string; // symbol
   };
 };
 

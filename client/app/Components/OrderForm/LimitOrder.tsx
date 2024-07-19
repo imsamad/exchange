@@ -5,8 +5,13 @@ import { useSession } from "next-auth/react";
 import { redirect, useParams, usePathname } from "next/navigation";
 import React, { useState } from "react";
 
-const LimitOrder = ({ currentPrice }: { currentPrice: number }) => {
-  const params = useParams<{ market: string }>();
+const LimitOrder = ({
+  currentPrice,
+  market,
+}: {
+  market: string;
+  currentPrice: number;
+}) => {
   const { data, status } = useSession();
   const pathname = usePathname();
 
@@ -27,7 +32,7 @@ const LimitOrder = ({ currentPrice }: { currentPrice: number }) => {
   const onSubmit = async () => {
     const order: Omit<TIncomingOrder, "userId"> = {
       side: formBody.side,
-      market: params.market,
+      market: market,
       price: formBody.price,
       quantity: formBody.quantity,
     };

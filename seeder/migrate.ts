@@ -35,6 +35,17 @@ const migrateUserAndBalance = async (client: Client) => {
             base_asset VARCHAR(50) NOT NULL UNIQUE
         );    
     `);
+
+    //   await client.query(`
+    //     CREATE TABLE IF NOT EXISTS order (
+    //         order_id SERIAL PRIMARY KEY,
+    //         market VARCHAR(50),
+    //         side CHECK(side IN ('ask', 'bid')) NOT NULL,
+    //         price NUMERIC NOT NULL,
+    //         quantity NUMERIC NOT NULL,
+    //         user_id INT NOT NULL REFERENCES users(user_id),
+    //     );
+    // `);
   } catch (error) {
     console.log("migrateUserAndBalance error: ", error);
     throw error;

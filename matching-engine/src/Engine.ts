@@ -568,13 +568,13 @@ export class Engine implements TEngine {
       );
 
       const updatedBids = depth.bids.find((bid) => bid[0] == order.price);
-
+      console.log("dispatched:", `depth@${order.market}`);
       RedisManager.getInstance().publishMessage(`depth@${order.market}`, {
         stream: `depth@${order.market}`,
         data: {
-          a: updatedAsks,
-          b: updatedBids ? [updatedBids] : [],
-          e: "depth",
+          updatedAsks: updatedAsks,
+          updatedBids: updatedBids ? [updatedBids] : [],
+          type: "depth",
         },
       });
     } else {
@@ -587,9 +587,9 @@ export class Engine implements TEngine {
       RedisManager.getInstance().publishMessage(`depth@${order.market}`, {
         stream: `depth@${order.market}`,
         data: {
-          a: updatedAsks ? [updatedAsks] : [],
-          b: updatedBids,
-          e: "depth",
+          updatedAsks: updatedAsks ? [updatedAsks] : [],
+          updatedBids: updatedBids,
+          type: "depth",
         },
       });
     }
@@ -600,12 +600,12 @@ export class Engine implements TEngine {
       RedisManager.getInstance().publishMessage(`trade@${market}`, {
         stream: `trade@${market}`,
         data: {
-          e: "trade",
-          t: fill.tradeId,
+          type: "trade",
+          tradeId: fill.tradeId,
           m: fill.otherOrderId == fill.userId,
-          p: fill.price,
-          q: fill.quantity,
-          s: market,
+          price: fill.price,
+          quantity: fill.quantity,
+          symbol: market,
         },
       });
     });
@@ -637,9 +637,9 @@ export class Engine implements TEngine {
     RedisManager.getInstance().publishMessage(`depth@${market}`, {
       stream: `depth@${market}`,
       data: {
-        a: updatedAsks.length ? updatedAsks : [[price, 0]],
-        b: updatedBids.length ? updatedBids : [[price, 0]],
-        e: "depth",
+        updatedAsks: updatedAsks.length ? updatedAsks : [[price, 0]],
+        updatedBids: updatedBids.length ? updatedBids : [[price, 0]],
+        type: "depth",
       },
     });
   }

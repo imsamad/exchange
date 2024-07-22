@@ -14,7 +14,8 @@
     "start": "pnpm start",
     "service:up": "docker compose -f docker-compose-dev.yaml up -d mq db && echo 'Lets wait, Postgres is waking up...' && sleep 20",
     "service:down": "docker compose down -v",
-    "migrate-seed": "cd server && pnpm migrate-seed"
+    "migrate-seed": "cd server && pnpm migrate-seed",
+    "spin-up": "docker compose up -d"
   },
   "keywords": [],
   "author": "",

@@ -2,17 +2,43 @@
 import { TIncomingOrder } from "@/app/lib/types";
 import { Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
 import { useSession } from "next-auth/react";
-import { redirect, useParams, usePathname } from "next/navigation";
-import React, { useState } from "react";
+import { redirect, usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 
-const LimitOrder = ({
-  currentPrice,
-  market,
-}: {
-  market: string;
-  currentPrice: number;
-}) => {
+const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
   const { data, status } = useSession();
+  const [myBalance, setMyBalance] = useState(0);
+
+  const getAndSetBalance = async () => {
+    if (status != "authenticated") return;
+
+    try {
+      const res: any = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/mybalance`,
+        {
+          headers: {
+            // @ts-ignore
+            authorization: `Bearer ${data.jwtToken!}`,
+          },
+        }
+      );
+
+      const rowData = await res.json();
+
+      const quote_asset = market.split("_")[1];
+
+      setMyBalance(rowData.find((b: any) => b.asset == quote_asset).available);
+    } catch (error) {
+      console.log("err in fetching balance: ", error);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      await getAndSetBalance();
+    })();
+  }, []);
+
   const pathname = usePathname();
 
   const [formBody, setFormBody] = useState<{
@@ -27,6 +53,10 @@ const LimitOrder = ({
     price: 10,
     orderType: "limit",
     orderInVolume: true,
+  });
+
+  const [postPlace, setPostPlace] = useState({
+    fills: 0,
   });
 
   const onSubmit = async () => {
@@ -50,6 +80,11 @@ const LimitOrder = ({
           authorization: `Bearer ${data.jwtToken!}`,
         },
       });
+      setPostPlace((await res.json()).payload.filledQty);
+      setTimeout(() => {
+        setPostPlace({ fills: 0 });
+      });
+      await getAndSetBalance();
     } catch (err) {
       console.log("er");
     }
@@ -106,7 +141,7 @@ const LimitOrder = ({
 
         <Flex className="p-2 pb-0 pt-4 text-sm text-gray-500" justify="between">
           <p>Available Balance</p>
-          <p className="text-gray-200">0.0 USDC</p>
+          <p className="text-gray-200">{myBalance}</p>
         </Flex>
         {formBody.orderType == "market" && (
           <button
@@ -133,7 +168,7 @@ const LimitOrder = ({
                 className="text-right"
                 value={formBody.price}
                 name="price"
-                onChange={(e) => {
+                onChange={(e: any) => {
                   setFormBody((p) => ({ ...p, price: Number(e.target.value) }));
                 }}
               />
@@ -146,7 +181,7 @@ const LimitOrder = ({
                 name="quantity"
                 className="text-right"
                 value={formBody.quantity}
-                onChange={(e) => {
+                onChange={(e: any) => {
                   setFormBody((p) => ({
                     ...p,
                     quantity: Number(e.target.value),
@@ -172,6 +207,9 @@ const LimitOrder = ({
           >
             {status == "authenticated" ? `Save` : "Signin"}
           </Button>
+          {postPlace.fills && true ? (
+            <Text className="bg-green-600 p-4 rounded-md">postPlace.fills</Text>
+          ) : null}
         </div>
       </div>
     </div>

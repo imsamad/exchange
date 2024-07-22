@@ -1,11 +1,21 @@
+"use client";
 import { Heading, Table } from "@radix-ui/themes";
 import Navbar from "./Components/Navbar";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-const HomePage = async () => {
-  const res = await fetch(`${process.env.API_URL}/markets`);
-  const data = await res.json();
+const HomePage = () => {
+  const [markets, setMarkets] = useState<any>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/markets`);
+        const data = await res.json();
+        setMarkets(data.markets);
+      } catch (error) {}
+    })();
+  }, []);
 
   return (
     <>
@@ -22,17 +32,17 @@ const HomePage = async () => {
           </Table.Header>
 
           <Table.Body>
-            {data.markets.map((market: any) => {
-              const link = `/trades/${market.base_asset.toUpperCase()}_${market.quote_asset.toUpperCase()}`;
+            {markets.map((market: any) => {
+              const link = `/trades/${market.base_asset.toLowerCase()}_${market.quote_asset.toLowerCase()}`;
               return (
                 <Table.Row key={market.base_asset}>
                   <Table.RowHeaderCell>
-                    <Link href={link}>{market.base_asset.toUpperCase()} </Link>
+                    <Link href={link}>{market.base_asset.toLowerCase()} </Link>
                   </Table.RowHeaderCell>
 
                   <Table.Cell>
                     <Link href={link} className="block">
-                      {`${market.base_asset.toUpperCase()} ${market.quote_asset.toUpperCase()}`}{" "}
+                      {`${market.base_asset.toLowerCase()} ${market.quote_asset.toLowerCase()}`}{" "}
                     </Link>
                   </Table.Cell>
                 </Table.Row>

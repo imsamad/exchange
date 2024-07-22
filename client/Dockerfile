@@ -13,7 +13,7 @@ FROM deps AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-CMD ["pnpm", "dev" ]
+CMD ["pnpm","dev"]
 
 FROM deps AS prod
 WORKDIR /app
@@ -21,4 +21,4 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-CMD ["pnpm", "start"]
+CMD ["sh",  "-c", "sleep 60 && pnpm start"]

@@ -1,85 +1,94 @@
 services:
-  client:
-    build:
-      context: client
-      target: dev
-    ports:
-      - 3000:3000
-    volumes:
-      - ./client/:/app/
-      - /app/node_modules
-    env_file: .env
-    networks:
-      - exchange_nw
-
-  api:
-    build:
-      context: api
-      target: dev
-    ports:
-      - 4000:4000
-    env_file: .env
-    volumes:
-      - ./api/:/app/
-      - /app/node_modules
-    depends_on:
-      - mq
-    networks:
-      - exchange_nw
-
-  matching-engine:
-    build:
-      context: matching-engine
-      target: dev
-    volumes:
-      - ./matching-engine/:/app/
-      - /app/node_modules
-    depends_on:
-      - mq
-    networks:
-      - exchange_nw
-    env_file: .env
-
   mq:
     image: redis
+    container_name: mq
     networks:
       - exchange_nw
-    ports:
-      - 6379:6379
 
   db:
     image: timescale/timescaledb-ha:pg16
-    environment:
-      - POSTGRES_DB=exchange
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=mypwd
-      - POSTGRES_HOST=timescaledb
-      - POSTGRES_PORT=5432
-
+    container_name: db
+    env_file: .env-prod
     ports:
       - 5432:5432
+    networks:
+      - exchange_nw
     volumes:
-      - timescale-data:/var/lib/postgresql/data
+      - timescale-data-prod:/var/lib/postgresql/data
+
+  client:
+    build:
+      context: client
+      target: prod
+    container_name: client
+    # environment:
+    #   - NODE_ENV=development
+    env_file: .env-prod
+    # volumes:
+    #   - ./client/:/app/
+    #   - /app/node_modules
+
+    ports:
+      - 3000:3000
     networks:
       - exchange_nw
 
-  store:
+  server:
     build:
-      context: store
-      target: dev
+      context: server
+      target: prod
+    container_name: server
+    restart: always
+    ports:
+      - 4000:4000
+    env_file: .env-prod
+    depends_on:
+      - mq
+      - engine
+      - db
     networks:
       - exchange_nw
-    volumes:
-      - ./store/:/app/
-      - /app/node_modules
+
+  engine:
+    build:
+      context: engine
+      target: prod
+    container_name: engine
+    depends_on:
+      - mq
+      - db-processor
+    networks:
+      - exchange_nw
+    env_file: .env-prod
+
+  db-processor:
+    build:
+      context: db-processor
+      target: prod
+    container_name: db-processor
+    networks:
+      - exchange_nw
     depends_on:
       - mq
       - db
-    env_file: .env
+    env_file: .env-prod
+
+  web-sockets:
+    build:
+      context: web-sockets
+      target: prod
+    container_name: ws
+    ports:
+      - 5000:5000
+    networks:
+      - exchange_nw
+    depends_on:
+      - mq
+    env_file: .env-prod
 
 networks:
   exchange_nw:
     driver: bridge
 
 volumes:
-  timescale-data:
+  timescale-data-prod:

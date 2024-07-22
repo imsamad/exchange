@@ -35,7 +35,6 @@ const Navbar = () => {
             className="italic inline-block items-center"
           >
             {data.user?.email} &nbsp;
-            <span className="text-green-600">/ &#8377;1000</span>
           </Heading>
           <Button
             className="block"

@@ -1,0 +1,16 @@
+{
+    "orderBooks": [
+        [
+            "btc_usdt",
+            {
+                "baseAsset": "btc",
+                "quoteAsset": "usdt",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ]
+    ],
+    "userBalances": {}
+}

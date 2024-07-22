@@ -1,0 +1,108 @@
+services:
+  client:
+    build:
+      context: client
+      target: dev
+    container_name: client-dev
+    ports:
+      - 3000:3000
+    volumes:
+      - ./client/:/app/
+      - /app/node_modules
+    env_file: .env-dev
+    environment:
+      - NODE_ENV=development
+    networks:
+      - exchange_nw
+
+  server:
+    build:
+      context: server
+      target: dev
+    container_name: server-dev
+    ports:
+      - 4000:4000
+    env_file: .env-dev
+    volumes:
+      - ./server/:/app/
+      - /app/node_modules
+    depends_on:
+      - mq
+    networks:
+      - exchange_nw
+
+  web-sockets:
+    build:
+      context: web-sockets
+      target: dev
+    container_name: ws-dev
+    volumes:
+      - ./web-sockets/:/app/
+      - /app/node_modules
+    ports:
+      - 5000:5000
+    networks:
+      - exchange_nw
+    depends_on:
+      - mq
+    env_file: .env-dev
+
+  engine:
+    build:
+      context: engine
+      target: dev
+    container_name: engine-dev
+    volumes:
+      - ./engine/:/app/
+      - /app/node_modules
+    depends_on:
+      - mq
+    networks:
+      - exchange_nw
+    env_file: .env-dev
+
+  mq:
+    image: redis
+    container_name: mq-dev
+    ports:
+      - 6379:6379
+    networks:
+      - exchange_nw
+
+  db:
+    image: timescale/timescaledb-ha:pg16
+    container_name: db-dev
+    environment:
+      - POSTGRES_DB=exchange
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mypwd
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+    ports:
+      - 5432:5432
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    networks:
+      - exchange_nw
+
+  db-processor:
+    container_name: db-processor-dev
+    build:
+      context: db-processor
+      target: dev
+    networks:
+      - exchange_nw
+    volumes:
+      - ./db-processor/:/app/
+      - /app/node_modules
+    depends_on:
+      - mq
+      - db
+    env_file: .env-dev
+
+networks:
+  exchange_nw:
+    driver: bridge
+
+volumes:
+  timescale-data:

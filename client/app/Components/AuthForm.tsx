@@ -19,8 +19,8 @@ const AuthForm = ({
   onSubmit: (email: string, password: string) => Promise<void>;
 }) => {
   const [formData, setFormData] = useState({
-    email: "1@2.3",
-    password: "123",
+    email: "imsamad00@gmail.com",
+    password: "12345",
   });
 
   const [error, setError] = useState(err);

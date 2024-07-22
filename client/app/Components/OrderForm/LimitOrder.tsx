@@ -201,11 +201,12 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
               formBody.quantity == 0
             }
             onClick={() => {
+              console.log("clicked: ", status == "authenticated");
               if (status == "authenticated") onSubmit();
               else redirect("/signin?redirectTo=" + pathname);
             }}
           >
-            {status == "authenticated" ? `Save` : "Signin"}
+            {status == "authenticated" ? `Submit` : "Signin"}
           </Button>
           {postPlace.fills && true ? (
             <Text className="bg-green-600 p-4 rounded-md">postPlace.fills</Text>

@@ -284,18 +284,13 @@ export class OrderBook extends TOrderBook {
     currentPrice: number;
   } {
     const bidsMap = new Map();
-    this.bids.forEach(({ price, quantity }) => {
-      bidsMap.set(price, (bidsMap.get(price) || 0) + quantity);
+    this.bids.forEach(({ price, quantity, filled }) => {
+      bidsMap.set(price, (bidsMap.get(price) || 0) + (quantity - filled));
     });
 
     const asksMap = new Map();
-    this.asks.forEach(({ price, quantity }) => {
-      asksMap.set(price, (asksMap.get(price) || 0) + quantity);
-    });
-
-    console.log({
-      bidsMap,
-      asksMap,
+    this.asks.forEach(({ price, quantity, filled }) => {
+      asksMap.set(price, (asksMap.get(price) || 0) + quantity - filled);
     });
 
     return {

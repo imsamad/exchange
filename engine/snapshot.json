@@ -5,12 +5,33 @@
             {
                 "baseAsset": "btc",
                 "quoteAsset": "usdt",
-                "lastTradeId": 0,
-                "currentPrice": 0,
+                "lastTradeId": 1,
+                "currentPrice": 15,
                 "asks": [],
                 "bids": []
             }
         ]
     ],
-    "userBalances": {}
+    "userBalances": {
+        "1": {
+            "btc": {
+                "available": 10010,
+                "locked": 0
+            },
+            "usdt": {
+                "available": 9850,
+                "locked": 0
+            }
+        },
+        "2": {
+            "btc": {
+                "available": 9990,
+                "locked": 0
+            },
+            "usdt": {
+                "available": 10150,
+                "locked": 0
+            }
+        }
+    }
 }

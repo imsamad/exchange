@@ -17,7 +17,13 @@ api/out
 .next
 
 /out/
+dist
+dist/
+/dist
 
+
+snapshot.json
+**.js
 # production
 /build
 

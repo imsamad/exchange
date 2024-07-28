@@ -21,4 +21,5 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
+# have to delay, due to postgress cold start problem
 CMD ["sh",  "-c", "sleep 60 && pnpm migrate-seed && pnpm start"]

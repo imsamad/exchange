@@ -1,43 +1,33 @@
+version: "3.8"
+
 services:
   mq:
     image: redis
     container_name: mq
-    networks:
-      - exchange_nw
 
   db:
     image: timescale/timescaledb-ha:pg16
     container_name: db
     env_file: .env-prod
-    ports:
-      - 5432:5432
-    networks:
-      - exchange_nw
     volumes:
       - timescale-data-prod:/var/lib/postgresql/data
 
   client:
     build:
-      context: client
+      context: ./client
       target: prod
+    image: imsamad/exchange-client
     container_name: client
-    # environment:
-    #   - NODE_ENV=development
     env_file: .env-prod
-    # volumes:
-    #   - ./client/:/app/
-    #   - /app/node_modules
-
     ports:
       - 3000:3000
-    networks:
-      - exchange_nw
 
   server:
     build:
-      context: server
+      context: ./server
       target: prod
     container_name: server
+    image: imsamad/exchange-server
     restart: always
     ports:
       - 4000:4000
@@ -46,49 +36,40 @@ services:
       - mq
       - engine
       - db
-    networks:
-      - exchange_nw
 
   engine:
     build:
-      context: engine
+      context: ./engine
       target: prod
     container_name: engine
+    image: imsamad/exchange-engine
+    env_file: .env-prod
     depends_on:
       - mq
       - db-processor
-    networks:
-      - exchange_nw
-    env_file: .env-prod
 
   db-processor:
     build:
-      context: db-processor
+      context: ./db-processor
       target: prod
     container_name: db-processor
-    networks:
-      - exchange_nw
+    image: imsamad/exchange-db-processor
+    env_file: .env-prod
     depends_on:
       - mq
       - db
-    env_file: .env-prod
 
   web-sockets:
     build:
-      context: web-sockets
+      context: ./web-sockets
       target: prod
     container_name: ws
+    image: imsamad/exchange-web-sockets
     ports:
       - 5000:5000
-    networks:
-      - exchange_nw
+    env_file: .env-prod
     depends_on:
       - mq
-    env_file: .env-prod
-
-networks:
-  exchange_nw:
-    driver: bridge
 
 volumes:
   timescale-data-prod:

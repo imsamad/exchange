@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "init:setup": "pnpm install && cd client && pnpm install && cd ../server && pnpm install && cd ../db-processor && pnpm install && cd ../engine && pnpm install && cd ../web-sockets && pnpm install",
     "dev:client": "cd client && pnpm dev && cd ../server && pnpm dev",
     "dev:server": "cd server && pnpm dev",
     "dev:engine": "cd engine && pnpm dev",
@@ -12,8 +13,8 @@
     "dev": "concurrently  --names 'client,server,engine,db-processor,ws' --prefix '{name}' -c 'auto' 'pnpm dev:client' 'pnpm dev:server' 'pnpm dev:engine' 'pnpm dev:db-processor' 'pnpm dev:ws'",
     "build": "cd client && pnpm build && cd ../server && pnpm build",
     "start": "pnpm start",
-    "service:up": "docker compose -f docker-compose-dev.yaml up -d mq db && echo 'Lets wait, Postgres is waking up...' && sleep 20",
-    "service:down": "docker compose down -v",
+    "service:up": "docker compose -f docker-compose-dev.yaml up -d mq db && echo 'Lets wait, Postgres is waking up (cold start)...' && sleep 20",
+    "service:down": "docker compose down -v && rm engine/snapshot.json && echo 'Done!'",
     "migrate-seed": "cd server && pnpm migrate-seed",
     "spin-up": "docker compose up -d"
   },

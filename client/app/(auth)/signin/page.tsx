@@ -7,6 +7,7 @@ import { Suspense, useState } from "react";
 import { flushSync } from "react-dom";
 
 const SinginPage = () => {
+  
   const { status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();

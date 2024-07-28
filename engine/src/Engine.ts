@@ -460,12 +460,23 @@ export class Engine implements TEngine {
 
         this.userBalances[fill.userId] = buyerUserBalance;
         this.userBalances[fill.otherUserId] = sellerUserBalance;
+
+        // handle overprice buying order
+        if (order.price > fill.price) {
+          buyerUserBalance[quoteAsset].locked -=
+            fill.quantity * (order.price - fill.price);
+
+          buyerUserBalance[quoteAsset].available +=
+            fill.quantity * (order.price - fill.price);
+        }
+
+        // if buyer put the price more than
       } else {
         let sellerUserBalance = this.userBalances[fill.userId];
         let buyerUserBalance = this.userBalances[fill.otherUserId];
 
         // it might happen, buyer does not have base asset entry in userBalances
-        // buyer would have quoteAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+        // buyer would have quoteAsset definitely otherwise error have been thrown in checkAndLockBalance method
 
         if (!buyerUserBalance[baseAsset]) {
           this.userBalances[fill.userId][baseAsset] = {
@@ -476,7 +487,7 @@ export class Engine implements TEngine {
         }
 
         // it might happen, seller does not have quote asset entry in userBalances
-        // seller would have baseAsset definitely otherwise would have been thrown error in checkAndLockBalance method
+        // seller would have baseAsset definitely otherwise error have been thrown in checkAndLockBalance method
 
         if (!sellerUserBalance[quoteAsset]) {
           this.userBalances[fill.otherUserId][quoteAsset] = {
@@ -491,6 +502,15 @@ export class Engine implements TEngine {
 
         buyerUserBalance[baseAsset].available += fill.quantity;
         buyerUserBalance[quoteAsset].locked -= fill.quantity * fill.price;
+
+        // handle overprice buying order
+        // if (order.price < fill.price) {
+        //   buyerUserBalance[quoteAsset].locked -=
+        //     fill.quantity * (order.price - fill.price);
+
+        //   buyerUserBalance[quoteAsset].available +=
+        //     fill.quantity * (order.price - fill.price);
+        // }
       }
     });
   }

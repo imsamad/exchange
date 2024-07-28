@@ -1,15 +1,21 @@
 "use client";
 import { TIncomingOrder } from "@/app/lib/types";
-import { Button, Flex, Heading, Text, TextField } from "@radix-ui/themes";
+import { Button, Flex, Text, TextField } from "@radix-ui/themes";
 import { useSession } from "next-auth/react";
 import { redirect, usePathname } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
   const { data, status } = useSession();
-  const [myBalance, setMyBalance] = useState(0);
+  const [myBalance, setMyBalance] = useState({
+    base_asset: 0,
+    quote_asset: 0,
+  });
 
-  const getAndSetBalance = async () => {
+  const quote_asset = market.split("_")[1];
+  const base_asset = market.split("_")[0];
+
+  const getAndSetBalance = useCallback(async () => {
     if (status != "authenticated") return;
 
     try {
@@ -25,19 +31,29 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
 
       const rowData = await res.json();
 
-      const quote_asset = market.split("_")[1];
+      // setMyBalance(rowData.find((b: any) => b.asset == quote_asset || b.asset == base_asset));
 
-      setMyBalance(rowData.find((b: any) => b.asset == quote_asset).available);
+      setMyBalance(
+        rowData
+          .filter((b: any) => b.asset == quote_asset || b.asset == base_asset)
+          .map((d: any) => ({
+            [d.asset == base_asset ? "base_asset" : "quote_asset"]: d.available,
+          }))
+          .reduce((acc: any, obj: any) => {
+            return { ...acc, ...obj };
+          }, {})
+      );
     } catch (error) {
       console.log("err in fetching balance: ", error);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base_asset, quote_asset, status]);
 
   useEffect(() => {
     (async () => {
       await getAndSetBalance();
     })();
-  }, []);
+  }, [getAndSetBalance, status]);
 
   const pathname = usePathname();
 
@@ -96,18 +112,14 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
         <button
           onClick={() => setFormBody((p) => ({ ...p, side: "bid" }))}
           className={`transition flex-1 py-4 text-green-500 border-b-2 border-b-transparent ${
-            formBody.side == "bid"
-              ? "  border-b-green-800"
-              : "hover:border-b-white"
+            formBody.side == "bid" ? "  border-b-white" : "hover:border-b-white"
           } `}
         >
           Buy
         </button>
         <button
           className={`transition flex-1 py-4 text-pink-300   border-b-2 border-b-transparent ${
-            formBody.side == "ask"
-              ? "border-b-pink-800"
-              : "hover:border-b-white"
+            formBody.side == "ask" ? "border-b-white" : "hover:border-b-white"
           }`}
           onClick={() => setFormBody((p) => ({ ...p, side: "ask" }))}
         >
@@ -121,7 +133,7 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
             onClick={() => setFormBody((p) => ({ ...p, orderType: "limit" }))}
             className={`py-[1px] px-2 border-b-2 border-b-transparent  text-gray-400 transition ${
               formBody.orderType == "limit"
-                ? "border-b-gray-400 text-white"
+                ? "border-b-white"
                 : "hover:border-b-gray-300"
             }`}
           >
@@ -131,7 +143,7 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
             onClick={() => setFormBody((p) => ({ ...p, orderType: "market" }))}
             className={`py-[1px] px-2 border-b-2 border-b-transparent  text-gray-400 transition ${
               formBody.orderType == "market"
-                ? "border-b-gray-400 text-white"
+                ? "border-b-white"
                 : "hover:border-b-gray-300"
             }`}
           >
@@ -140,8 +152,12 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
         </Flex>
 
         <Flex className="p-2 pb-0 pt-4 text-sm text-gray-500" justify="between">
-          <p>Available Balance</p>
-          <p className="text-gray-200">{myBalance}</p>
+          <p>Available {base_asset.toUpperCase()}</p>
+          <p className="text-gray-200">{myBalance.base_asset}</p>
+        </Flex>
+        <Flex className="p-2 pb-0 pt-4 text-sm text-gray-500" justify="between">
+          <p>Available {quote_asset.toUpperCase()}</p>
+          <p className="text-gray-200">{myBalance.quote_asset}</p>
         </Flex>
         {formBody.orderType == "market" && (
           <button
@@ -201,7 +217,6 @@ const LimitOrder = ({ market }: { market: string; currentPrice: number }) => {
               formBody.quantity == 0
             }
             onClick={() => {
-              console.log("clicked: ", status == "authenticated");
               if (status == "authenticated") onSubmit();
               else redirect("/signin?redirectTo=" + pathname);
             }}

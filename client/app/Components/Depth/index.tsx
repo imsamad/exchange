@@ -52,7 +52,7 @@ const DepthTab = ({ market }: { market: string }) => {
       <Table.Header>
         <Table.Row>
           <Table.ColumnHeaderCell align="center" colSpan={2}>
-            <Heading>Dapth Tab</Heading>
+            <Heading>Orderbook</Heading>
           </Table.ColumnHeaderCell>
         </Table.Row>
         <Table.Row>

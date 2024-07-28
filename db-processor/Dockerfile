@@ -13,7 +13,7 @@ FROM deps AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-CMD ["sh",  "-c", "sleep 60 && pnpm dev"]
+CMD ["sh",  "-c", "sleep 20 && pnpm dev"]
 
 FROM deps AS prod
 WORKDIR /app
@@ -21,4 +21,5 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-CMD ["sh",  "-c", "sleep 60 && pnpm start"]
+# have to delay, due to postgress cold start problem
+CMD ["sh",  "-c", "sleep 20 && pnpm start"]

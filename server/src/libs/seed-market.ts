@@ -23,7 +23,7 @@ pgClient
     let promised: any = [];
     for (
       let i = 0;
-      i < Math.min(base_assets.length, Math.min(10, quote_assets.length));
+      i < Math.min(base_assets.length, quote_assets.length);
       i++
     ) {
       promised.push(
@@ -46,16 +46,14 @@ pgClient
         })
       );
     }
-    console.log(promised.length);
+
     await Promise.allSettled(promised)
-      .then((res) => {
-        console.log(res);
-      })
+      .then((res) => {})
       .catch((err) => {
         console.log(err);
       })
       .finally(() => {
-        console.log("finally");
+        console.log("migrated and seeded!");
         process.exit();
       });
   })

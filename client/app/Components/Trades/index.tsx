@@ -76,7 +76,7 @@ const TradesTab = ({ market }: { market: string }) => {
       <Table.Header>
         <Table.Row>
           <Table.ColumnHeaderCell align="center" colSpan={3}>
-            <Heading>Trade Tab</Heading>
+            <Heading>Trades</Heading>
           </Table.ColumnHeaderCell>
         </Table.Row>
 

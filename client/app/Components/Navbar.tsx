@@ -10,7 +10,7 @@ const Navbar = () => {
   return (
     <div className="w-full flex items-center py-4 lg:px-4  px-8 justify-between border-b-2 border-gray-400">
       <Link href="/">
-        <Heading size="8"> Radiation</Heading>
+        <Heading size="8"> Radiation </Heading>
       </Link>
 
       {status != "authenticated" ? (

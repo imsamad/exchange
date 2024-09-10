@@ -1,35 +1,135 @@
 {
     "orderBooks": [
         [
+            "tata_inr",
+            {
+                "baseAsset": "tata",
+                "quoteAsset": "inr",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
             "btc_usdt",
             {
                 "baseAsset": "btc",
                 "quoteAsset": "usdt",
-                "lastTradeId": 1,
-                "currentPrice": 15,
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "eth_usdc",
+            {
+                "baseAsset": "eth",
+                "quoteAsset": "usdc",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "xrp_eur",
+            {
+                "baseAsset": "xrp",
+                "quoteAsset": "eur",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "ltc_jpy",
+            {
+                "baseAsset": "ltc",
+                "quoteAsset": "jpy",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "bch_gbp",
+            {
+                "baseAsset": "bch",
+                "quoteAsset": "gbp",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "eos_aud",
+            {
+                "baseAsset": "eos",
+                "quoteAsset": "aud",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "xlm_cad",
+            {
+                "baseAsset": "xlm",
+                "quoteAsset": "cad",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "ada_chf",
+            {
+                "baseAsset": "ada",
+                "quoteAsset": "chf",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "trx_cny",
+            {
+                "baseAsset": "trx",
+                "quoteAsset": "cny",
+                "lastTradeId": 0,
+                "currentPrice": 0,
+                "asks": [],
+                "bids": []
+            }
+        ],
+        [
+            "dash_krw",
+            {
+                "baseAsset": "dash",
+                "quoteAsset": "krw",
+                "lastTradeId": 0,
+                "currentPrice": 0,
                 "asks": [],
                 "bids": []
             }
         ]
     ],
     "userBalances": {
-        "1": {
-            "btc": {
-                "available": 10010,
+        "123": {
+            "tata": {
+                "available": 10000,
                 "locked": 0
             },
-            "usdt": {
-                "available": 9850,
-                "locked": 0
-            }
-        },
-        "2": {
-            "btc": {
-                "available": 9990,
-                "locked": 0
-            },
-            "usdt": {
-                "available": 10150,
+            "inr": {
+                "available": 10000,
                 "locked": 0
             }
         }

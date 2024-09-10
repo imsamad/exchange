@@ -1,4 +1,4 @@
-import { TOrderBootType, TFill, TOrder, TPrice } from "./types";
+import { TOrderBootType, TFill, TOrder, TPrice } from './types';
 
 function removeElementAtIndex(arr: any, index: number) {
   if (index > -1 && index < arr.length) {
@@ -85,7 +85,7 @@ export class OrderBook extends TOrderBook {
     fills: TFill[];
     filledQty: number;
   } {
-    if (order.side == "bid") {
+    if (order.side == 'bid') {
       const { fills, remainingOrder } = this.matchBid(order);
 
       if (remainingOrder.quantity != remainingOrder.filled) {
@@ -166,7 +166,7 @@ export class OrderBook extends TOrderBook {
 
         market: order.market,
 
-        side: "bid",
+        side: 'bid',
       });
 
       if (this.asks[i].filled == this.asks[i].quantity) {
@@ -233,7 +233,7 @@ export class OrderBook extends TOrderBook {
         timestamp: Date.now(),
 
         market: saleOrder.market,
-        side: "bid",
+        side: 'bid',
       });
 
       if (this.bids[i].quantity == this.bids[i].filled) {

@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   mq:
@@ -16,7 +16,6 @@ services:
     build:
       context: ./client
       target: prod
-    image: imsamad/exchange-client
     container_name: client
     env_file: .env-prod
     ports:
@@ -27,7 +26,6 @@ services:
       context: ./server
       target: prod
     container_name: server
-    image: imsamad/exchange-server
     restart: always
     ports:
       - 4000:4000
@@ -42,7 +40,6 @@ services:
       context: ./engine
       target: prod
     container_name: engine
-    image: imsamad/exchange-engine
     env_file: .env-prod
     depends_on:
       - mq
@@ -53,7 +50,6 @@ services:
       context: ./db-processor
       target: prod
     container_name: db-processor
-    image: imsamad/exchange-db-processor
     env_file: .env-prod
     depends_on:
       - mq
@@ -64,7 +60,6 @@ services:
       context: ./web-sockets
       target: prod
     container_name: ws
-    image: imsamad/exchange-web-sockets
     ports:
       - 5000:5000
     env_file: .env-prod

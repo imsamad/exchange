@@ -1,5 +1,5 @@
-import { createClient, RedisClientType } from "redis";
-import { MessageFromEngien, MessageToEngine } from "../types";
+import { createClient, RedisClientType } from 'redis';
+import { MessageFromEngien, MessageToEngine } from '../types';
 
 export class RedisManager {
   private subscriber: RedisClientType;
@@ -30,7 +30,7 @@ export class RedisManager {
         Math.random().toString().slice(2, 10);
 
       this.publisher.lPush(
-        "messages",
+        'messages',
         JSON.stringify({
           clientId,
           message,

@@ -1,5 +1,5 @@
-import { RedisClientType, createClient } from "redis";
-import { DBMessage, MessageToApi, WsMessage } from "./types";
+import { RedisClientType, createClient } from 'redis';
+import { DBMessage, MessageToApi, WsMessage } from './types';
 
 export class RedisManager {
   private client: RedisClientType;

@@ -1,6 +1,6 @@
-import { WsManager } from "../../lib/WsManager";
-import { Heading, Table } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import { WsManager } from '../../lib/WsManager';
+import { Heading, Table } from '@radix-ui/themes';
+import React, { useEffect, useState } from 'react';
 
 const DepthTab = ({ market }: { market: string }) => {
   const [orderbooks, setOrderbooks] = useState<any>({
@@ -22,12 +22,12 @@ const DepthTab = ({ market }: { market: string }) => {
 
   useEffect(() => {
     WsManager.getInstance().sendMessage({
-      method: "SUBSCRIBE",
+      method: 'SUBSCRIBE',
       params: [`depth@${market}`],
     });
 
     WsManager.getInstance().registerCallback(
-      "depth",
+      'depth',
       (data: any) => {
         setOrderbooks((p: any) => ({
           bids: [...data.bids.sort((a: any, b: any) => b[0] - a[0])],
@@ -40,24 +40,24 @@ const DepthTab = ({ market }: { market: string }) => {
 
     return () => {
       WsManager.getInstance().sendMessage({
-        method: "UNSUBSCRIBE",
+        method: 'UNSUBSCRIBE',
         params: [`depth@${market}`.toLowerCase()],
       });
-      WsManager.getInstance().deRegisterCallback("depth", `DEPTH-${market}`);
+      WsManager.getInstance().deRegisterCallback('depth', `DEPTH-${market}`);
     };
   }, [market]);
 
   return (
-    <Table.Root size="3" variant="surface">
+    <Table.Root size='3' variant='surface'>
       <Table.Header>
         <Table.Row>
-          <Table.ColumnHeaderCell align="center" colSpan={2}>
+          <Table.ColumnHeaderCell align='center' colSpan={2}>
             <Heading>Orderbook</Heading>
           </Table.ColumnHeaderCell>
         </Table.Row>
         <Table.Row>
-          <Table.ColumnHeaderCell align="center">Price</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell align="center">
+          <Table.ColumnHeaderCell align='center'>Price</Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell align='center'>
             Quantity
           </Table.ColumnHeaderCell>
         </Table.Row>
@@ -69,22 +69,22 @@ const DepthTab = ({ market }: { market: string }) => {
           </Table.Cell>
         </Table.Row> */}
         {orderbooks.asks.map((ask: any) => (
-          <Table.Row key={ask[0] + Math.random()} className="bg-red-900">
-            <Table.Cell align="center">{ask[0]}</Table.Cell>
-            <Table.Cell align="center">{ask[1]}</Table.Cell>
+          <Table.Row key={ask[0] + Math.random()} className='bg-red-900'>
+            <Table.Cell align='center'>{ask[0]}</Table.Cell>
+            <Table.Cell align='center'>{ask[1]}</Table.Cell>
           </Table.Row>
         ))}
 
         <Table.Row>
-          <Table.Cell colSpan={2} align="center">
+          <Table.Cell colSpan={2} align='center'>
             {orderbooks.currentPrice}
           </Table.Cell>
         </Table.Row>
 
         {orderbooks.bids.map((bid: any) => (
-          <Table.Row key={bid[0] + Math.random()} className="bg-green-900">
-            <Table.Cell align="center">{bid[0]}</Table.Cell>
-            <Table.Cell align="center">{bid[1]}</Table.Cell>
+          <Table.Row key={bid[0] + Math.random()} className='bg-green-900'>
+            <Table.Cell align='center'>{bid[0]}</Table.Cell>
+            <Table.Cell align='center'>{bid[1]}</Table.Cell>
           </Table.Row>
         ))}
       </Table.Body>

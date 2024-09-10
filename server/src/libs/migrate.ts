@@ -1,5 +1,5 @@
-require("dotenv").config();
-import { Client } from "pg";
+require('dotenv').config();
+import { Client } from 'pg';
 
 /**
  * 1. Migrate users table, balances table
@@ -47,7 +47,7 @@ export const migrateUserAndBalance = async (client: Client) => {
     //     );
     // `);
   } catch (error) {
-    console.log("migrateUserAndBalance error: ", error);
+    console.log('migrateUserAndBalance error: ', error);
     throw error;
   }
 };

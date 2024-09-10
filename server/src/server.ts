@@ -1,25 +1,25 @@
-import "express-async-errors";
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
+import 'express-async-errors';
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
 
-import { CustomeError } from "./libs/CustomError";
-import { ErrorHandler } from "./middlewares/ErrorHandler";
+import { CustomeError } from './libs/CustomError';
+import { ErrorHandler } from './middlewares/ErrorHandler';
 
-import { authMiddleware } from "./middlewares/auth";
-import { createTables } from "./libs/createTable";
-import { RedisManager } from "./libs/RedisManager";
-import { PGManager } from "./libs/PGManager";
+import { authMiddleware } from './middlewares/auth';
+import { createTables } from './libs/createTable';
+import { RedisManager } from './libs/RedisManager';
+import { PGManager } from './libs/PGManager';
 
 const appInstance = express();
 
 appInstance.use(express.json());
 appInstance.use(cors());
-appInstance.use(morgan("dev"));
+appInstance.use(morgan('dev'));
 
-appInstance.post("/limitorder", authMiddleware, async (req, res) => {
+appInstance.post('/limitorder', authMiddleware, async (req, res) => {
   const message = await RedisManager.getInstance().sendAndWait({
-    type: "CREATE_ORDER",
+    type: 'CREATE_ORDER',
     payload: {
       price: req.body.price,
       quantity: req.body.quantity,
@@ -32,9 +32,9 @@ appInstance.post("/limitorder", authMiddleware, async (req, res) => {
   res.json(message);
 });
 
-appInstance.delete("/limitorder", authMiddleware, async (req, res) => {
+appInstance.delete('/limitorder', authMiddleware, async (req, res) => {
   const message = await RedisManager.getInstance().sendAndWait({
-    type: "ORDER_CANCELLED",
+    type: 'ORDER_CANCELLED',
     payload: {
       market: req.body.market,
       orderId: req.body.orderId,
@@ -45,9 +45,9 @@ appInstance.delete("/limitorder", authMiddleware, async (req, res) => {
   res.json(message.payload);
 });
 
-appInstance.get("/depth/:market", async (req, res) => {
+appInstance.get('/depth/:market', async (req, res) => {
   const message = await RedisManager.getInstance().sendAndWait({
-    type: "GET_DEPTH",
+    type: 'GET_DEPTH',
     payload: {
       market: req.params.market,
     },
@@ -56,7 +56,7 @@ appInstance.get("/depth/:market", async (req, res) => {
   res.json(message.payload);
 });
 
-appInstance.get("/trades/:market", async (req, res) => {
+appInstance.get('/trades/:market', async (req, res) => {
   const x = await PGManager.getInstance().getClient().query(`
     select * from ${req.params.market.toLowerCase()};
   `);
@@ -80,9 +80,9 @@ appInstance.get("/trades/:market", async (req, res) => {
   // res.json(message.payload);
 });
 
-appInstance.get("/openOrderBook", authMiddleware, async (req, res) => {
+appInstance.get('/openOrderBook', authMiddleware, async (req, res) => {
   const message = await RedisManager.getInstance().sendAndWait({
-    type: "OPEN_ORDERS",
+    type: 'OPEN_ORDERS',
     payload: {
       userId: req.currentUser?.id!,
       market: req.body.market,
@@ -92,7 +92,7 @@ appInstance.get("/openOrderBook", authMiddleware, async (req, res) => {
   res.json(message.payload);
 });
 
-appInstance.post("/onramp", authMiddleware, async (req, res) => {
+appInstance.post('/onramp', authMiddleware, async (req, res) => {
   const userId = req.currentUser?.id!;
   const x = await PGManager.getInstance().getClient().query(`
     select * from markets;
@@ -122,7 +122,7 @@ appInstance.post("/onramp", authMiddleware, async (req, res) => {
             );
 
           const message = await RedisManager.getInstance().sendAndWait({
-            type: "ON_RAMP",
+            type: 'ON_RAMP',
             payload: {
               userId: userId,
               amount: 10000,
@@ -141,10 +141,10 @@ appInstance.post("/onramp", authMiddleware, async (req, res) => {
 
   const result = await Promise.allSettled(promises);
 
-  res.json({ message: "ok", result: result });
+  res.json({ message: 'ok', result: result });
 });
 
-appInstance.get("/markets", async (req, res) => {
+appInstance.get('/markets', async (req, res) => {
   const q = await PGManager.getInstance().getClient().query(`
       select * from markets;
     `);
@@ -154,7 +154,7 @@ appInstance.get("/markets", async (req, res) => {
   });
 });
 
-appInstance.post("/markets", async (req, res) => {
+appInstance.post('/markets', async (req, res) => {
   await createTables(
     PGManager.getInstance().getClient(),
     req.body.base_asset,
@@ -162,7 +162,7 @@ appInstance.post("/markets", async (req, res) => {
   );
 
   const mes = await RedisManager.getInstance().sendAndWait({
-    type: "ADD_ORDERBOOK",
+    type: 'ADD_ORDERBOOK',
     payload: {
       baseAsset: req.body.base_asset,
       quoteAsset: req.body.quote_asset,
@@ -172,7 +172,7 @@ appInstance.post("/markets", async (req, res) => {
   res.json(mes.payload);
 });
 
-appInstance.get("/mybalance", authMiddleware, async (req, res) => {
+appInstance.get('/mybalance', authMiddleware, async (req, res) => {
   const userId = req.currentUser?.id!;
 
   const x = await PGManager.getInstance()
@@ -183,7 +183,7 @@ appInstance.get("/mybalance", authMiddleware, async (req, res) => {
 });
 
 appInstance.use(() => {
-  throw new CustomeError(404, "Not Found!");
+  throw new CustomeError(404, 'Not Found!');
 });
 
 appInstance.use(ErrorHandler);

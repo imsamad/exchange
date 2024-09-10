@@ -1,9 +1,9 @@
-"use client";
-import { Heading, Table } from "@radix-ui/themes";
-import Navbar from "./Components/Navbar";
+'use client';
+import { Heading, Table } from '@radix-ui/themes';
+import Navbar from './Components/Navbar';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const HomePage = () => {
   const [markets, setMarkets] = useState<any>([]);
@@ -20,10 +20,10 @@ const HomePage = () => {
   return (
     <>
       <Navbar />
-      <div className="p-12">
+      <div className='p-12'>
         <Heading>Markets</Heading>
-        <hr className="my-2" />
-        <Table.Root size="3">
+        <hr className='my-2' />
+        <Table.Root size='3'>
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeaderCell>Symbol</Table.ColumnHeaderCell>
@@ -41,8 +41,8 @@ const HomePage = () => {
                   </Table.RowHeaderCell>
 
                   <Table.Cell>
-                    <Link href={link} className="block">
-                      {`${market.base_asset.toLowerCase()} ${market.quote_asset.toLowerCase()}`}{" "}
+                    <Link href={link} className='block'>
+                      {`${market.base_asset.toLowerCase()} ${market.quote_asset.toLowerCase()}`}{' '}
                     </Link>
                   </Table.Cell>
                 </Table.Row>
